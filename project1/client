@@ -37,22 +37,12 @@ def main():
     args = parse.parse_args()
 
     if (args.port != None):
-        print("here")
         CountOccurences(args.hostname, args.neuid, args.port)
     else:
         CountOccurences(args.hostname, args.neuid)
 
 if __name__=='__main__':
     main()
-
-
-
-            
-        
-
-
-
-        # Try recieving some thing here 
     
 
      

@@ -40,7 +40,7 @@ PROV = "prov"
 
 class Router:
   """ Your Router """
-  def __init__(self, networks):
+  def __init__(self, networks, asn):
     self.routes = {}
     self.updates = {}
     self.relations = {}
@@ -165,6 +165,8 @@ class Router:
 
 if __name__ == "__main__":
   PARSER = argparse.ArgumentParser(description='route packets')
+  PARSER.add_argument('asn', metavar='asn', type=str, nargs=1, help="asn")
   PARSER.add_argument('networks', metavar='networks', type=str, nargs='+', help="networks")
   ARGS = PARSER.parse_args()
-  Router(ARGS.networks).run()
+  print(ARGS.asn)
+  Router(ARGS.networks, ARGS.asn).run()

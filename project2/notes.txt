@@ -1,0 +1,23 @@
+Got the router working with sim. 
+
+Probably should get vagrant set up when they fix it. But for now testing needs 
+to happen on the khory linux server in the dir with the router code.
+
+Ex. ./bgp-sim/sim bgp-sim/tests/1-1-simple-send.conf 
+
+
+You get update messages and data messages for the 1 tests.
+
+For update, just update the update list.
+
+For data, for now, just figure out which neighbor in the update list to send to
+Do this by just matching the ip for now. Though I imagine we will have to 
+do a bitwise and at some point and then do a highest prefix match, though im not
+sure how that completely works. 
+
+Send out by a socket send to the network in the update list.
+
+
+Also, the AS number will be used to prevent loops. Basically, 
+when our router gets a message and it sees its own as number, then it knows that 
+there is a loop since the message has been here before.

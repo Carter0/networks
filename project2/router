@@ -45,7 +45,7 @@ class RoutingInfo:
     self.network = msg['network']
     self.netmask = msg['netmask']
     self.nextHop = srcif
-    self.asPath = msg['ASPATH']
+    self.asPath = msg['ASPath']
 
 
 class Router:

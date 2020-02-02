@@ -50,17 +50,17 @@ class RoutingInfo:
 
 class Router:
     """ Your Router """
-  def __init__(self, networks, asn):
-    self.routes = {}
-    self.updates = {}
-    self.relations = {}
-    self.sockets = {}
-    for relationship in networks:
-      network, relation = relationship.split("-")
-      self.sockets[network] = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
-      self.sockets[network].setblocking(0)
-      self.sockets[network].connect(network)
-      self.relations[network] = relation
+    def __init__(self, networks, asn):
+      self.routes = {}
+      self.updates = {}
+      self.relations = {}
+      self.sockets = {}
+      for relationship in networks:
+        network, relation = relationship.split("-")
+        self.sockets[network] = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+        self.sockets[network].setblocking(0)
+        self.sockets[network].connect(network)
+        self.relations[network] = relation
 
   def lookup_routes(self, daddr):
     """ Lookup all valid routes for an address """

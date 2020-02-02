@@ -21,3 +21,14 @@ Send out by a socket send to the network in the update list.
 Also, the AS number will be used to prevent loops. Basically, 
 when our router gets a message and it sees its own as number, then it knows that 
 there is a loop since the message has been here before.
+
+--------------
+
+Sunday, Feb 2nd
+
+The routing table will have a few entries as of right now
+1. In the example, the src will be the 12.0.0.0. The next hop will be the 172.65.0.2 number, and 
+the netmask will be the netmask 
+2. The routing table will for now be a dictionary of lists.
+3. In order to do the longest prefix matching, we will sort the list by the longest prefix and 
+return the first match.

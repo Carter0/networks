@@ -151,7 +151,7 @@ class Router:
     table_dump = {}
     table_dump['dst'] = packet['src']
     table_dump['src'] = packet['dst']
-    table_dump[TABL] = TABL
+    table_dump['type'] = TABL
     table_msg = []
     for network, route in self.routes:
         msg = {}
@@ -171,6 +171,8 @@ class Router:
     """ dispatches a packet by determing the packets type """
     if (packet['type'] == 'update'):
         self.update(srcif, packet)
+    elif (packet['type'] == DUMP):
+        self.dump(packet)
     return False
 
   def send_error(self, conn, msg):

@@ -129,12 +129,13 @@ class Router:
 
   def update(self, srcif, packet):
     """ handle update packets """
+    print(packet)
     self.updates[srcif] = packet # Save update info for later.
     self.routes[packet[network]] = RoutingInfo(srcif, packet)
     
     test = routes['192.168.0.2']
     print(test.network)
-    print(test.netmask)
+    print(test.netmask)  
 
     return False
 

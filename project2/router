@@ -38,6 +38,16 @@ PROV = "prov"
 
 ##########################################################################################
 
+class RoutingInfo:
+  """ This class will be the data of the routing table """
+  def __init__ (self, srcif, packet):
+    msg = packet['msg']
+    self.network = msg['network']
+    self.netmask = msg['netmask']
+    self.nextHop = srcif
+    self.asPath = msg['ASPath']
+
+
 class Router:
     """ Your Router """
   def __init__(self, networks, asn):
@@ -120,7 +130,15 @@ class Router:
 
   def update(self, srcif, packet):
     """ handle update packets """
-    # TODO 
+    print(srcif)
+    self.updates[srcif] = packet # Save update info for later.
+    self.routes[srcif] = RoutingInfo(srcif, packet)
+    
+    test = self.routes['192.168.0.2']
+    print(test.network)
+    print(test.netmask)  
+    print(test.asPath) 
+
     return False
 
   def revoke(self, packet):
@@ -151,8 +169,9 @@ class Router:
     return True
 
   def handle_packet(self, srcif, packet):
-    """ dispatches a packet """
-    # TODO
+    """ dispatches a packet by determing the packets type """
+    if (packet['type'] == 'update'):
+        self.update(srcif, packet)
     return False
 
   def send_error(self, conn, msg):
@@ -175,7 +194,10 @@ class Router:
             if self.sockets[sock] == conn:
               srcif = sock
           msg = json.loads(k)
-          print(msg)
+          self.handle_packet(srcif, msg)
+
+
+
           if not self.handle_packet(srcif, msg):
             self.send_error(conn, msg)
         else:

@@ -137,6 +137,7 @@ class Router:
     test = self.routes['192.168.0.2']
     print(test.network)
     print(test.netmask)  
+    print(test.asPath) 
 
     return False
 

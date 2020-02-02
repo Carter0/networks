@@ -162,8 +162,8 @@ class Router:
           
           msg = json.loads(k)
           
-          if (msg['type'] == "update"):
-            update(srcif, msg)
+          if (msg['type'] == 'update'):
+            self.update(srcif, msg)
 
 
 

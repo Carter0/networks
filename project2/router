@@ -130,7 +130,7 @@ class Router:
   def update(self, srcif, packet):
     """ handle update packets """
     self.updates[srcif] = packet # Save update info for later.
-    self.routes[msg[network]] = RoutingInfo(srcif, packet)
+    self.routes[packet[network]] = RoutingInfo(srcif, packet)
     
     test = routes['192.168.0.2']
     print(test['network'])

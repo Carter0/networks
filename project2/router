@@ -120,7 +120,9 @@ class Router:
 
   def update(self, srcif, packet):
     """ handle update packets """
-    # TODO 
+    print(srcif)
+    print(packet)
+
     return False
 
   def revoke(self, packet):
@@ -157,8 +159,12 @@ class Router:
           for sock in self.sockets:
             if self.sockets[sock] == conn:
               srcif = sock
-          msg = json.loads(k)
-          print(msg)
+          
+          if (msg[type] == 'update'):
+            update(srcif, msg)
+
+
+
           if not self.handle_packet(srcif, msg):
             self.send_error(conn, msg)
         else:

@@ -134,7 +134,7 @@ class Router:
     self.updates[srcif] = packet # Save update info for later.
     self.routes[srcif] = RoutingInfo(srcif, packet)
     
-    test = routes['192.168.0.2']
+    test = self.routes['192.168.0.2']
     print(test.network)
     print(test.netmask)  
 

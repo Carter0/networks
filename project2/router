@@ -41,10 +41,11 @@ PROV = "prov"
 class RoutingInfo:
   """ This class will be the data of the routing table """
   def __init__ (self, srcif, packet):
-    self.network = packet['network']
-    self.netmask = packet['netmask']
+    msg = packet['msg']
+    self.network = msg['network']
+    self.netmask = msg['netmask']
     self.nextHop = srcif
-    self.asPath = packet['ASPATH']
+    self.asPath = msg['ASPATH']
 
 
 class Router:
@@ -129,9 +130,9 @@ class Router:
 
   def update(self, srcif, packet):
     """ handle update packets """
-    print(packet)
+    print(srcif)
     self.updates[srcif] = packet # Save update info for later.
-    self.routes[packet[network]] = RoutingInfo(srcif, packet)
+    self.routes[srcif] = RoutingInfo(srcif, packet)
     
     test = routes['192.168.0.2']
     print(test.network)

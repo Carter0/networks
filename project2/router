@@ -120,9 +120,8 @@ class Router:
 
   def update(self, srcif, packet):
     """ handle update packets """
-    print(srcif)
-    print(packet)
     self.routes[srcif] = packet
+    print(self.routes[srcif])
 
     return False
 

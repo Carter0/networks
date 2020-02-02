@@ -122,6 +122,7 @@ class Router:
     """ handle update packets """
     print(srcif)
     print(packet)
+    self.routes[srcif] = packet
 
     return False
 

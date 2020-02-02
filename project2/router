@@ -121,7 +121,6 @@ class Router:
   def update(self, srcif, packet):
     """ handle update packets """
     self.routes[srcif] = packet
-    print(self.routes[srcif])
 
     return False
 
@@ -136,8 +135,9 @@ class Router:
     return True
 
   def handle_packet(self, srcif, packet):
-    """ dispatches a packet """
-    # TODO
+    """ dispatches a packet by determing the packets type """
+    if (msg['type'] == 'update'):
+        self.update(srcif, msg)
     return False
 
   def send_error(self, conn, msg):
@@ -159,11 +159,8 @@ class Router:
           for sock in self.sockets:
             if self.sockets[sock] == conn:
               srcif = sock
-          
           msg = json.loads(k)
-          
-          if (msg['type'] == 'update'):
-            self.update(srcif, msg)
+          self.handle_packet(srcif, msg)
 
 
 

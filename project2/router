@@ -148,13 +148,11 @@ class Router:
 
   def dump(self, packet):
     """ handles dump table requests """
-    # TODO
     table_dump = {}
     table_dump['dst'] = packet['src']
     table_dump['src'] = packet['dst']
     table_dump[TABL] = TABL
     table_msg = []
-    # route is a network, submask, next hop
     for network, route in self.routes:
         msg = {}
         msg["network"] = network
@@ -165,7 +163,8 @@ class Router:
     table_dump['msg'] = table_msg
 
     table_json = json.dump(table_dump)
-    self.forward( , table_json)
+    print(table_json)
+    self.forward(packet["dst"], table_json)
     return True
 
   def handle_packet(self, srcif, packet):

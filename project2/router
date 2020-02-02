@@ -133,8 +133,8 @@ class Router:
     self.routes[packet[network]] = RoutingInfo(srcif, packet)
     
     test = routes['192.168.0.2']
-    print(test['network'])
-    print(test['netmask'])
+    print(test.network)
+    print(test.netmask)
 
     return False
 

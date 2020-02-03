@@ -5,6 +5,7 @@ import argparse
 import json
 import select
 import socket
+import ipaddress 
 
 ##########################################################################################
 
@@ -43,7 +44,15 @@ class RoutingInfo:
 
   def __init__(self, srcif, packet):
     msg = packet['msg']
-    self.network = msg['network']
+    netmask = ipaddress.IPv4Address(msg['netmask'])
+    binary_netmask = str(bin(int(netmask)))
+    mask_count = 0
+    for i in binary_netmask:
+       if i == "1":
+         mask_count += 1
+    binary_network = ipaddress.ip_network(msg['network'] + "/" + str(mask_count))
+    binary_network.netmask = binary_netmask
+    self.network = str(binary_network).split("/")[0]#  msg['network']
     self.netmask = msg['netmask']
     self.nextHop = srcif
     self.asPath = msg['ASPath']
@@ -156,18 +165,19 @@ class Router:
       table_dump['src'] = packet['dst']
       table_dump['type'] = TABL
       table_msg = []
-      for network, route in self.routes:
+      for network, route in self.routes.items():
           msg = {}
-          msg["network"] = network
+          msg["network"] = route.network
           msg["netmask"] = route.netmask
           msg["peer"] = route.nextHop
           table_msg.append(msg)
 
       table_dump['msg'] = table_msg
 
-      table_json = json.dump(table_dump)
-      print(table_json)
-      self.forward(packet["dst"], table_json)
+      table_json = json.dumps(table_dump)
+      s = self.sockets[packet['src']]
+     
+      s.send(table_json.encode())
       return True
 
     def handle_packet(self, srcif, packet):

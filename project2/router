@@ -156,12 +156,7 @@ class Router:
           update_msg = packet['msg']
           if not self.asn in update_msg["ASPath"]:
            update_msg["ASPath"].append(self.asn)
-          print("ASN")
-          print(self.asn)
-          print("ASPATH")
-          print(update_msg["ASPath"])
           update_packet['msg'] = update_msg
-          print(update_packet)
           s.send(json.dumps(update_packet).encode())
       
       return False

@@ -66,6 +66,7 @@ class Router:
       self.updates = {}
       self.relations = {}
       self.sockets = {}
+      self.asn = int(asn[0])
       for relationship in networks:
         network, relation = relationship.split("-")
         self.sockets[network] = socket.socket(
@@ -142,16 +143,34 @@ class Router:
 
     def update(self, srcif, packet):
       """ handle update packets """
-      print(srcif)
       self.updates[srcif] = packet # Save update info for later.
       self.routes[srcif] = RoutingInfo(srcif, packet)
     
-      test = self.routes['192.168.0.2']
-      print(test.network)
-      print(test.netmask)  
-      print(test.asPath) 
-
+      for network, s in self.sockets.items():
+        if srcif != network:
+          self.create_ip_src(network)
+          update_packet = {}
+          update_packet['src'] = self.create_ip_src(network)
+          update_packet['dst'] = network 
+          update_packet['type'] = 'update'
+          update_msg = packet['msg']
+          if not self.asn in update_msg["ASPath"]:
+           update_msg["ASPath"].append(self.asn)
+          print("ASN")
+          print(self.asn)
+          print("ASPATH")
+          print(update_msg["ASPath"])
+          update_packet['msg'] = update_msg
+          print(update_packet)
+          s.send(json.dumps(update_packet).encode())
+      
       return False
+
+    def create_ip_src(self, ip):
+      """Change ip to src ip"""
+      iplist = ip.split(".")
+      iplist[3] = str(int(iplist[3]) - 1)
+      return ".".join(iplist)
 
     def revoke(self, packet):
       """ handle revoke packets """

@@ -50,9 +50,11 @@ class RoutingInfo:
     for i in binary_netmask:
        if i == "1":
          mask_count += 1
-    binary_network = ipaddress.ip_network(msg['network'] + "/" + str(mask_count))
-    binary_network.netmask = binary_netmask
-    self.network = str(binary_network).split("/")[0]#  msg['network']
+    cidr_network = ipaddress.ip_network(msg['network'] + "/" + str(mask_count))
+    ## Mystery line 
+    cidr_network.netmask = binary_netmask
+    ## ip_network has String override that does binary and for us.
+    self.network = str(cidr_network).split("/")[0]#  msg['network']
     self.netmask = msg['netmask']
     self.nextHop = srcif
     self.asPath = msg['ASPath']
@@ -145,18 +147,21 @@ class Router:
       """ handle update packets """
       self.updates[srcif] = packet # Save update info for later.
       self.routes[srcif] = RoutingInfo(srcif, packet)
+      
+
+      update_packet = {}
+      update_packet['type'] = 'update'
+      update_msg = packet['msg']
+      update_msg["ASPath"].append(self.asn)
+      update_packet['msg'] = update_msg 
     
       for network, s in self.sockets.items():
         if srcif != network:
           self.create_ip_src(network)
-          update_packet = {}
           update_packet['src'] = self.create_ip_src(network)
-          update_packet['dst'] = network 
-          update_packet['type'] = 'update'
-          update_msg = packet['msg']
-          if not self.asn in update_msg["ASPath"]:
-           update_msg["ASPath"].append(self.asn)
-          update_packet['msg'] = update_msg
+          update_packet['dst'] = network
+          print("SENDING _________")
+          print(update_packet)
           s.send(json.dumps(update_packet).encode()) # This is us broadcasting update messages right?
       
       return False
@@ -164,7 +169,7 @@ class Router:
     def create_ip_src(self, ip):
       """Change ip to src ip"""
       iplist = ip.split(".")
-      iplist[3] = str(int(iplist[3]) - 1)
+      iplist[3] = "1"
       return ".".join(iplist)
 
     def revoke(self, packet):
@@ -196,8 +201,11 @@ class Router:
 
     def handle_packet(self, srcif, packet):
       """ dispatches a packet by determing the packets type """
-      if (packet['type'] == 'update'):
-        self.update(srcif, packet)
+      if (packet['type'] == UPDT):
+        print("RECEIVING_________")
+        print(packet)
+        if not self.asn in packet["msg"]["ASPath"]:
+          self.update(srcif, packet)
       elif (packet['type'] == DUMP):
         self.dump(packet)
       return False

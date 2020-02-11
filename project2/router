@@ -47,7 +47,7 @@ class RoutingInfo:
     netmask = ipaddress.IPv4Address(msg['netmask'])
     binary_netmask = str(bin(int(netmask)))
     mask_count = 0
-    mask_count = len([x for x in range(binary_netmask) if x == '1'])
+    mask_count = int([x for x in range(binary_netmask) if x == '1'])
     print(mask_count)
 
     for i in binary_netmask:

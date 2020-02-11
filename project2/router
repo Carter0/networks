@@ -152,16 +152,15 @@ class Router:
       update_packet = {}
       update_packet['type'] = 'update'
       update_msg = packet['msg']
-      update_msg["ASPath"].append(self.asn)
+      if not self.asn in update_msg["ASPath"]:
+        update_msg["ASPath"].append(self.asn)
       update_packet['msg'] = update_msg 
-    
+
       for network, s in self.sockets.items():
         if srcif != network:
           self.create_ip_src(network)
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
-          print("SENDING _________")
-          print(update_packet)
           s.send(json.dumps(update_packet).encode()) # This is us broadcasting update messages right?
       
       return False
@@ -202,10 +201,7 @@ class Router:
     def handle_packet(self, srcif, packet):
       """ dispatches a packet by determing the packets type """
       if (packet['type'] == UPDT):
-        print("RECEIVING_________")
-        print(packet)
-        if not self.asn in packet["msg"]["ASPath"]:
-          self.update(srcif, packet)
+        self.update(srcif, packet)
       elif (packet['type'] == DUMP):
         self.dump(packet)
       return False

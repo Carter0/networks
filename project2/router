@@ -62,8 +62,8 @@ class RoutingInfo:
 
     def __eq__(self, other):
       return self.cidr_network == other.cidr_network and self.nextHop == other.nextHop
-      and self.localPref == other.localPref and self.mask_count == other.mask_count
-      and self.asPath == other.asPath
+        and self.localPref == other.localPref and self.mask_count == other.mask_count
+        and self.asPath == other.asPath
 
 
 class Router:

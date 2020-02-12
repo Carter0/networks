@@ -144,6 +144,7 @@ class Router:
 
     def noRoute(self, srcif, packet):
         packet['type'] = "no route"
+        packet['msg'] = {}
         self.sockets[srcif].send(json.dumps(packet).encode())
      
 

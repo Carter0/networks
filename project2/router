@@ -142,7 +142,9 @@ class Router:
             routes = self.filter_relationships(srcif, routes)
         return self.sockets[peer] if peer else None
 
-   def noRoute(self, srcif, packet):
+    def noRoute(self, srcif, packet):
+        packet['type'] = "no route"
+        srcif.send(json.dumps(packet).encode())
      
 
     def forward(self, srcif, packet):

@@ -71,6 +71,9 @@ class RoutingInfo:
     o = self.origin == other.origin
     return n and h and l and m and p and o
 
+  def __str__(self):
+    f'Routing info is =>  network: {self.network}, netmask: {self.netmask}, nextHop: {self.nextHop}, asPath: {self.asPath}, localPref: {self.localPref}'
+
 
 class Router:
     """ Your Router """

@@ -189,13 +189,8 @@ class Router:
       table_dump['type'] = TABL
       table_msg = []
       for cidr_network, routeObjects in self.routes.items():
-          msg = {}
-          if len(routeObjects) > 2:
-            for routeObject in routeObjects:
-              print("CIDR FOR PAIRS")
-              print(routeObject.cidr_network)
-              print(routeObject.nextHop)
           for routeObject in routeObjects:
+            msg = {}
             msg["network"] = routeObject.network
             msg["netmask"] = routeObject.netmask
             msg["peer"] = routeObject.nextHop
@@ -204,7 +199,6 @@ class Router:
       table_dump['msg'] = table_msg
 
       table_json = json.dumps(table_dump)
-      print(table_json)
       print("CAUGHT ME MID DUMP-------")
       print(table_dump)
       s = self.sockets[packet['src']]

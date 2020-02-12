@@ -46,18 +46,19 @@ class RoutingInfo:
     msg = packet['msg']
     netmask = ipaddress.IPv4Address(msg['netmask'])
     binary_netmask = str(bin(int(netmask)))
-    mask_count = 0
+    self.mask_count = 0
     for i in binary_netmask:
        if i == "1":
-         mask_count += 1
-    self.cidr_network = ipaddress.ip_network(msg['network'] + "/" + str(mask_count))
+         self.mask_count += 1
+    self.cidr_network = ipaddress.ip_network(msg['network'] + "/" + str(self.mask_count))
     ## Mystery line 
-    cidr_network.netmask = binary_netmask
+    ## self.cidr_network.netmask = binary_netmask
     ## ip_network has String override that does binary and for us.
-    self.network = str(cidr_network).split("/")[0]#  msg['network']
+    self.network = str(self.cidr_network).split("/")[0]#  msg['network']
     self.netmask = msg['netmask']
     self.nextHop = srcif
     self.asPath = msg['ASPath']
+    self.localPref = msg["localpref"]
 
 
 class Router:
@@ -148,8 +149,11 @@ class Router:
       self.updates[srcif] = packet # Save update info for later.
       routingInfoObject = RoutingInfo(srcif, packet) # Make the routing info object.
       routingTableKey = routingInfoObject.cidr_network # Get the key from the object.
-      self.routes[routingTableKey] = routingInfoObject # Add an entry into our routing table
-      
+
+      if routingTableKey in self.routes.keys():
+        self.routes[routingTableKey].append(routingInfoObject)
+      else:
+        self.routes[routingTableKey] = [routingInfoObject] # Add an entry into our routing table
 
       update_packet = {}
       update_packet['type'] = 'update'
@@ -184,16 +188,25 @@ class Router:
       table_dump['src'] = packet['dst']
       table_dump['type'] = TABL
       table_msg = []
-      for cidr_network, routeObject in self.routes.items():
+      for cidr_network, routeObjects in self.routes.items():
           msg = {}
-          msg["network"] = routeObject.network
-          msg["netmask"] = routeObject.netmask
-          msg["peer"] = routeObject.nextHop
-          table_msg.append(msg)
+          if len(routeObjects) > 2:
+            for routeObject in routeObjects:
+              print("CIDR FOR PAIRS")
+              print(routeObject.cidr_network)
+              print(routeObject.nextHop)
+          for routeObject in routeObjects:
+            msg["network"] = routeObject.network
+            msg["netmask"] = routeObject.netmask
+            msg["peer"] = routeObject.nextHop
+            table_msg.append(msg)
 
       table_dump['msg'] = table_msg
 
       table_json = json.dumps(table_dump)
+      print(table_json)
+      print("CAUGHT ME MID DUMP-------")
+      print(table_dump)
       s = self.sockets[packet['src']]
      
       s.send(table_json.encode())

@@ -237,7 +237,6 @@ class Router:
             update_msg["ASPath"].append(self.asn)
           update_packet['msg'] = update_msg
           self.create_ip_src(network)
-          update_packet = {}
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
           s.send(json.dumps(update_packet).encode())

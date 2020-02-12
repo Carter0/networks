@@ -61,9 +61,12 @@ class RoutingInfo:
     self.localPref = msg["localpref"]
 
   def __eq__(self, other):
-    return self.cidr_network == other.cidr_network and self.nextHop == other.nextHop
-      and self.localPref == other.localPref and self.mask_count == other.mask_count
-      and self.asPath == other.asPath
+    n = self.cidr_network == other.cidr_network
+    h = self.nextHop == other.nextHop
+    l = self.localPref == other.localPref
+    m = self.mask_count == other.mask_count
+    p = self.asPath == other.asPath
+    return n and h and l and m and p
 
 
 class Router:
@@ -139,9 +142,34 @@ class Router:
         routes = self.filter_relationships(srcif, routes)
       return self.sockets[peer] if peer else None
 
+   def noRoute(self, srcif, packet):
+     
+
     def forward(self, srcif, packet):
       """ Forward a data packet """
-      # TODO
+      destination = ipaddress.IPv4Address(packet["dst"])
+      
+      cidr_count = 0
+      best_match = None
+      for network in self.routes.keys():
+        if destination in network and self.routes[network][0].mask_count > cidr_count:
+           cidr_count = self.routes[network][0].mask_count
+           best_match = network
+           
+      best_local = 0
+      best_route = None 
+      for route in self.routes[best_match]:
+        if route.localPref > best_local:
+          best_local = route.localPref
+          best_route = route
+
+      if cidr_count == 0:
+        self.noRoute(srcif, packet)
+        return False
+
+      s = self.sockets[best_route.nextHop]
+      s.send(json.dumps(packet).encode())
+
       return False
 
     def coalesce(self):
@@ -156,7 +184,7 @@ class Router:
       routingTableKey = routingInfoObject.cidr_network # Get the key from the object.
 
       if routingTableKey in self.routes.keys():
-        if not routingObject in self.routes[routingTableKey]:
+        if not routingInfoObject in self.routes[routingTableKey]:
           self.routes[routingTableKey].append(routingInfoObject)
         else:
           return False
@@ -214,10 +242,14 @@ class Router:
 
     def handle_packet(self, srcif, packet):
       """ dispatches a packet by determing the packets type """
+      print("PACKET")
+      print(packet)
       if (packet['type'] == UPDT):
         self.update(srcif, packet)
       elif (packet['type'] == DUMP):
         self.dump(packet)
+      elif (packet['type'] == DATA):
+        self.forward(srcif, packet)
       return False
 
     def send_error(self, conn, msg):

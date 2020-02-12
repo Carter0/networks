@@ -98,7 +98,7 @@ class Router:
         outroutes = []
         for network in self.routes.keys():
           if destination in network:
-            outroutes.append(self.routes[network])
+            outroutes.extend(self.routes[network])
         return outroutes
 
     def get_shortest_as_path(self, routes):
@@ -119,7 +119,7 @@ class Router:
         outroutes = []
         highest_local = 0
         for route in routes:
-          print(route)
+          #print(route)
           lp = route.localPref
           if lp > highest_local:
             highest_local = route.localPref
@@ -138,9 +138,9 @@ class Router:
              outroutes.append(route)
           elif route.selfOrigin:
              we_true_yet = True
-             outroute = [route]
+             outroutes = [route]
           else:
-             outroute.append(route)
+             outroutes.append(route)
 
         return outroutes
 
@@ -152,8 +152,8 @@ class Router:
         ranks = ["IGP", "EGP", "UNK"]
         current_rank = 4
         for route in routes:
-          if ranks.indexof(route.origin) < current_rank:
-            current_rank = ranks.indexof(route.origin)
+          if ranks.index(route.origin) < current_rank:
+            current_rank = ranks.index(route.origin)
             outroutes = [route]
           elif ranks.indexof(route.origin) ==  current_rank:
             outroutes.append(route)
@@ -185,8 +185,12 @@ class Router:
             # TODO
             # Final check: enforce peering relationships
             routes = self.filter_relationships(srcif, routes)
-        else:
+        if len(routes) == 1:
+          peer = routes[0].nextHop
+        elif len(routes) == 0:
           self.noRoute(srcif, packet)
+        else:
+          print("ROUTES:\t", str(len(routes)))
         return self.sockets[peer] if peer else None
 
     def noRoute(self, srcif, packet):
@@ -200,31 +204,8 @@ class Router:
      
     def forward(self, srcif, packet):
       """ Forward a data packet """
-      '''
-      cidr_count = 0
-      best_match = None
-      for network in self.routes.keys():
-        if (destination in network) and (self.routes[network][0].mask_count > cidr_count):
-           cidr_count = self.routes[network][0].mask_count
-           best_match = network
 
-      if cidr_count == 0:
-        return False
-           
-      best_local = 0
-      best_route = None 
-      for route in self.routes[best_match]:
-        if route.localPref > best_local:
-          best_local = route.localPref
-          best_route = route
-      '''
-      self.get_route(srcif, packet["dst"])
-      s = self.sockets[best_route.nextHop]
-      print("FORWARDING PACKET")
-      print(packet)
-      print(best_match)
-      s.send(json.dumps(packet).encode())
-
+      self.get_route(srcif, packet["dst"]).send(json.dumps(packet).encode())
       return False
 
     def coalesce(self):
@@ -304,8 +285,8 @@ class Router:
       elif (packet['type'] == DUMP):
         self.dump(packet)
       elif (packet['type'] == DATA):
-        print("PACKET")
-        print(packet)
+        #print("PACKET")
+        #print(packet)
         self.forward(srcif, packet)
       return False
 

@@ -158,7 +158,7 @@ class Router:
            cidr_count = self.routes[network][0].mask_count
            best_match = network
 
-    if cidr_count == 0:
+      if cidr_count == 0:
         self.noRoute(srcif, packet)
         return False
            

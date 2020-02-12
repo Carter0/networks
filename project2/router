@@ -204,7 +204,6 @@ class Router:
      
     def forward(self, srcif, packet):
       """ Forward a data packet """
-
       self.get_route(srcif, packet["dst"]).send(json.dumps(packet).encode())
       return False
 
@@ -238,9 +237,9 @@ class Router:
       for network, s in self.sockets.items():
         if srcif != network:
           self.create_ip_src(network)
+          update_packet = {}
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
-          # This is us broadcasting update messages right?
           s.send(json.dumps(update_packet).encode())
       return False
 

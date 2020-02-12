@@ -144,10 +144,13 @@ class Router:
 
     def noRoute(self, srcif, packet):
         packet['type'] = "no route"
+        #packet['src'] = self.create_ip_src(srcif) 
         packet['msg'] = {}
+        print("NO ROUTE PACKET SENDING")
+        print(packet)
         self.sockets[srcif].send(json.dumps(packet).encode())
+        return False
      
-
     def forward(self, srcif, packet):
       """ Forward a data packet """
       destination = ipaddress.IPv4Address(packet["dst"])
@@ -155,7 +158,7 @@ class Router:
       cidr_count = 0
       best_match = None
       for network in self.routes.keys():
-        if destination in network and self.routes[network][0].mask_count > cidr_count:
+        if (destination in network) and (self.routes[network][0].mask_count > cidr_count):
            cidr_count = self.routes[network][0].mask_count
            best_match = network
 
@@ -170,9 +173,10 @@ class Router:
           best_local = route.localPref
           best_route = route
 
-
-
       s = self.sockets[best_route.nextHop]
+      print("FORWARDING PACKET")
+      print(packet)
+      print(best_match)
       s.send(json.dumps(packet).encode())
 
       return False
@@ -192,24 +196,26 @@ class Router:
         if not routingInfoObject in self.routes[routingTableKey]:
           self.routes[routingTableKey].append(routingInfoObject)
         else:
-            # Add an entry into our routing table
-            self.routes[routingTableKey] = [routingInfoObject]
+          return False
+      else:
+        # Add an entry into our routing table
+        self.routes[routingTableKey] = [routingInfoObject]
 
-        update_packet = {}
-        update_packet['type'] = 'update'
-        update_msg = packet['msg']
-        if not self.asn in update_msg["ASPath"]:
-            update_msg["ASPath"].append(self.asn)
-        update_packet['msg'] = update_msg
+      update_packet = {}
+      update_packet['type'] = 'update'
+      update_msg = packet['msg']
+      if not self.asn in update_msg["ASPath"]:
+        update_msg["ASPath"].append(self.asn)
+      update_packet['msg'] = update_msg
 
-        for network, s in self.sockets.items():
-            if srcif != network:
-                self.create_ip_src(network)
-                update_packet['src'] = self.create_ip_src(network)
-                update_packet['dst'] = network
-                # This is us broadcasting update messages right?
-                s.send(json.dumps(update_packet).encode())
-        return False
+      for network, s in self.sockets.items():
+        if srcif != network:
+          self.create_ip_src(network)
+          update_packet['src'] = self.create_ip_src(network)
+          update_packet['dst'] = network
+          # This is us broadcasting update messages right?
+          s.send(json.dumps(update_packet).encode())
+      return False
 
     def create_ip_src(self, ip):
         """Change ip to src ip"""

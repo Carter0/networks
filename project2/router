@@ -59,6 +59,8 @@ class RoutingInfo:
     self.nextHop = srcif
     self.asPath = msg['ASPath']
     self.localPref = msg["localpref"]
+    self.origin = msg["origin"]
+    self.selfOrigin = msg["selfOrigin"]
 
   def __eq__(self, other):
     n = self.cidr_network == other.cidr_network
@@ -66,7 +68,8 @@ class RoutingInfo:
     l = self.localPref == other.localPref
     m = self.mask_count == other.mask_count
     p = self.asPath == other.asPath
-    return n and h and l and m and p
+    o = self.origin == other.origin
+    return n and h and l and m and p and o
 
 
 class Router:
@@ -89,36 +92,75 @@ class Router:
     def lookup_routes(self, daddr):
         """ Lookup all valid routes for an address """
         # TODO
+        destination = ipaddress.IPv4Address(daddr)
         outroutes = []
+        for network in self.routes.keys():
+          if destination in networks:
+            outroutes.append(self.routes[network])
         return outroutes
 
     def get_shortest_as_path(self, routes):
         """ select the route with the shortest AS Path """
         # TODO
         outroutes = []
+        shortest_length = 99999999
+        for route in routes:
+           aspath_length = len(route.asPath)
+           if aspath_length < shortest_length:
+             outroutes = [route]
+           elif aspath_length == shortest_length:
+             outroutes.append(route)
         return outroutes
 
     def get_highest_preference(self, routes):
         """ select the route with the shortest AS Path """
-        # TODO
         outroutes = []
+        highest_local = 0
+        for route in routes:
+          lp = route.localPref
+          if lp > highest_local:
+            highest_local = route.localPref
+            outroutes = [route]
+          elif lp == highest_local:
+            outroutes.append(route)
         return outroutes
 
     def get_self_origin(self, routes):
         """ select self originating routes """
         # TODO
         outroutes = []
+        we_true_yet = False
+        for route in routes:
+          if we_true_yet and route.selfOrigin:
+             outroutes.append(route)
+          elif route.selfOrigin:
+             we_true_yet = True
+             outroute = [route]
+          else:
+             outroute.append(route)
+
         return outroutes
 
     def get_origin_routes(self, routes):
-        """ select origin routes: EGP > IGP > UNK """
+        """ select origin routes: IGP > EGP > UNK """
         # TODO
         outroutes = []
+        
+        ranks = ["IGP", "EGP", "UNK"]
+        current_rank = 4
+        for route in routes:
+          if ranks.indexof(route.origin) < current_rank:
+            current_rank = ranks.indexof(route.origin)
+            outroutes = [route]
+          elif ranks.indexof(route.origin) ==  current_rank:
+            outroutes.append(route)
+
         return outroutes
 
     def filter_relationships(self, srcif, routes):
         """ Don't allow Peer->Peer, Peer->Prov, or Prov->Peer forwards """
         outroutes = []
+        outroutes = routes
         return outroutes
 
     def get_route(self, srcif, daddr):
@@ -140,6 +182,8 @@ class Router:
             # TODO
             # Final check: enforce peering relationships
             routes = self.filter_relationships(srcif, routes)
+        else:
+          self.noRoute(srcif, packet)
         return self.sockets[peer] if peer else None
 
     def noRoute(self, srcif, packet):
@@ -153,8 +197,7 @@ class Router:
      
     def forward(self, srcif, packet):
       """ Forward a data packet """
-      destination = ipaddress.IPv4Address(packet["dst"])
-      
+      '''
       cidr_count = 0
       best_match = None
       for network in self.routes.keys():
@@ -163,7 +206,6 @@ class Router:
            best_match = network
 
       if cidr_count == 0:
-        self.noRoute(srcif, packet)
         return False
            
       best_local = 0
@@ -172,7 +214,8 @@ class Router:
         if route.localPref > best_local:
           best_local = route.localPref
           best_route = route
-
+      '''
+      self.get_route(srcif, packet["dst"])
       s = self.sockets[best_route.nextHop]
       print("FORWARDING PACKET")
       print(packet)
@@ -253,13 +296,13 @@ class Router:
 
     def handle_packet(self, srcif, packet):
       """ dispatches a packet by determing the packets type """
-      print("PACKET")
-      print(packet)
       if (packet['type'] == UPDT):
         self.update(srcif, packet)
       elif (packet['type'] == DUMP):
         self.dump(packet)
       elif (packet['type'] == DATA):
+        print("PACKET")
+        print(packet)
         self.forward(srcif, packet)
       return False
 

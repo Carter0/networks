@@ -60,6 +60,11 @@ class RoutingInfo:
     self.asPath = msg['ASPath']
     self.localPref = msg["localpref"]
 
+  def __eq__(self, other):
+    return self.cidr_network == other.cidr_network and self.nextHop == other.nextHop
+      and self.localPref == other.localPref and self.mask_count == other.mask_count
+      and self.asPath == other.asPath
+
 
 class Router:
     """ Your Router """
@@ -151,7 +156,10 @@ class Router:
       routingTableKey = routingInfoObject.cidr_network # Get the key from the object.
 
       if routingTableKey in self.routes.keys():
-        self.routes[routingTableKey].append(routingInfoObject)
+        if not routingObject in self.routes[routingTableKey]:
+          self.routes[routingTableKey].append(routingInfoObject)
+        else:
+          return False
       else:
         self.routes[routingTableKey] = [routingInfoObject] # Add an entry into our routing table
 
@@ -199,8 +207,6 @@ class Router:
       table_dump['msg'] = table_msg
 
       table_json = json.dumps(table_dump)
-      print("CAUGHT ME MID DUMP-------")
-      print(table_dump)
       s = self.sockets[packet['src']]
      
       s.send(table_json.encode())

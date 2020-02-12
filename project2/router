@@ -116,6 +116,7 @@ class Router:
         outroutes = []
         highest_local = 0
         for route in routes:
+          print(route)
           lp = route.localPref
           if lp > highest_local:
             highest_local = route.localPref

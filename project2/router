@@ -144,7 +144,7 @@ class Router:
 
     def noRoute(self, srcif, packet):
         packet['type'] = "no route"
-        self.socket[srcif].send(json.dumps(packet).encode())
+        self.sockets[srcif].send(json.dumps(packet).encode())
      
 
     def forward(self, srcif, packet):

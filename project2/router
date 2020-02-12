@@ -91,11 +91,10 @@ class Router:
 
     def lookup_routes(self, daddr):
         """ Lookup all valid routes for an address """
-        # TODO
         destination = ipaddress.IPv4Address(daddr)
         outroutes = []
         for network in self.routes.keys():
-          if destination in networks:
+          if destination in network:
             outroutes.append(self.routes[network])
         return outroutes
 

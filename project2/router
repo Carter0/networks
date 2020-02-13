@@ -214,39 +214,35 @@ class Router:
 
     def update(self, srcif, packet):
       """ handle update packets """
-      if srcif in self.updates:
-        print("got in")
-        return False
-          
-
       self.updates[srcif] = packet # Save update info for later.
       routingInfoObject = RoutingInfo(srcif, packet) # Make the routing info object.
       routingTableKey = routingInfoObject.cidr_network # Get the key from the object.
 
+      """
       if routingTableKey in self.routes.keys():
         if not routingInfoObject in self.routes[routingTableKey]:
           self.routes[routingTableKey].append(routingInfoObject)
         else:
           return False
       else:
-        # Add an entry into our routing table
-        self.routes[routingTableKey] = [routingInfoObject]
+      """
+      # Add an entry into our routing table
+      self.routes[routingTableKey] = [routingInfoObject]
 
       update_packet = {}
       update_packet['type'] = 'update'
-      update_msg = packet['msg']
+      update_packet['msg'] = packet['msg']
       if not self.asn in update_msg["ASPath"]:
         update_msg["ASPath"].append(self.asn)
-      update_packet['msg'] = update_msg
 
       for network, s in self.sockets.items():
         if srcif != network:
           self.create_ip_src(network)
-          update_packet = {}
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
           s.send(json.dumps(update_packet).encode())
-      return False
+
+      return True
 
     def create_ip_src(self, ip):
         """Change ip to src ip"""

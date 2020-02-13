@@ -298,6 +298,7 @@ class Router:
       elif (packet['type'] == DUMP):
         self.dump(packet)
       elif (packet['type'] == DATA):
+        print(f'in handle packet: ' {packet})
         self.forward(srcif, packet)
       return False
 
@@ -321,6 +322,8 @@ class Router:
                         if self.sockets[sock] == conn:
                             srcif = sock
                     msg = json.loads(k)
+                    if msg['type'] == DATA:
+                      print(f'in run: ' {msg})
                     self.handle_packet(srcif, msg)
 
                     if not self.handle_packet(srcif, msg):

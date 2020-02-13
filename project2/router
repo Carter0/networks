@@ -127,7 +127,6 @@ class Router:
 
     def get_shortest_as_path(self, routes):
         """ select the route with the shortest AS Path """
-        # TODO
         outroutes = []
         shortest_length = 99999999
         for route in routes:
@@ -187,11 +186,12 @@ class Router:
 
     def get_lowest_ip(self, routes):
       outroutes = []
-      lowest_ip = "255.255.255.255"
+      lowest_ip = ipaddress.IPv4Address("255.255.255.255")
       for route in routes:
-        if route.nextHop < lowest_ip:
+        nh_address = ipaddress.IPv4Address(route.nextHop)
+        if nh_address < lowest_ip:
           outroutes = [route]
-          lowest_ip = route.nextHop
+          lowest_ip = nh_address
       return outroutes
         
 

@@ -42,7 +42,13 @@ PROV = "prov"
 class RoutingInfo:
   """ This class will be the data of the routing table """
 
-  def __init__(self, srcif, packet):
+  def __init__(self, packet, srcif = None):
+    if srcif == None:
+      self.revoke_init(packet)
+    else:
+      self.update_init(srcif, packet)
+
+  def update_init(self, srcif, packet):
     msg = packet['msg']
     netmask = ipaddress.IPv4Address(msg['netmask'])
     binary_netmask = str(bin(int(netmask)))
@@ -62,6 +68,18 @@ class RoutingInfo:
     self.origin = msg["origin"]
     self.selfOrigin = msg["selfOrigin"]
 
+  def revoke_init(self, packet_network_msg):
+    msg = packet_network_msg
+    netmask = ipaddress.IPv4Address(msg['netmask'])
+    binary_netmask = str(bin(int(netmask)))
+    self.mask_count = 0
+    for i in binary_netmask:
+       if i == "1":
+         self.mask_count += 1
+    self.cidr_network = ipaddress.ip_network(msg['network'] + "/" + str(self.mask_count))
+    self.network = str(self.cidr_network).split("/")[0]#  msg['network']
+    self.netmask = msg['netmask']
+
   def __eq__(self, other):
     n = self.cidr_network == other.cidr_network
     h = self.nextHop == other.nextHop
@@ -70,6 +88,11 @@ class RoutingInfo:
     p = self.asPath == other.asPath
     o = self.origin == other.origin
     return n and h and l and m and p and o
+
+  def revokable(self, other):
+    n = self.cidr_network == other.cidr_network
+    m = self.mask_count == other.mask_count
+    return n and m
 
   def __str__(self):
     f'Routing info is =>  network: {self.network}, netmask: {self.netmask}, nextHop: {self.nextHop}, asPath: {self.asPath}, localPref: {self.localPref}'
@@ -188,8 +211,6 @@ class Router:
             routes = self.filter_relationships(srcif, routes)
         if len(routes) == 1:
           peer = routes[0].nextHop
-        elif len(routes) == 0:
-          self.noRoute(srcif, packet)
         else:
           print("ROUTES:\t", str(len(routes)))
         return self.sockets[peer] if peer else None
@@ -207,6 +228,7 @@ class Router:
       counter = 0
       peer = self.get_route(srcif, packet["dst"])
       if peer == None:
+        self.noRoute(srcif, packet)
         return False
       else:
         '''
@@ -232,7 +254,7 @@ class Router:
         
       """ handle update packets """
       self.updates[srcif] = packet # Save update info for later.
-      routingInfoObject = RoutingInfo(srcif, packet) # Make the routing info object.
+      routingInfoObject = RoutingInfo(packet, srcif=srcif) # Make the routing info object.
       routingTableKey = routingInfoObject.cidr_network # Get the key from the object.
 
       if routingTableKey in self.routes.keys():
@@ -268,17 +290,34 @@ class Router:
         """ handle revoke packets """
         peer = packet['src']
         self.revokes[peer] = packet
-        routes = self.get_networks_on_peer(peer)
+        network_route_pairs = self.get_networks_on_peer(peer)
+        networks_to_revoke = []
+        for network in packet["msg"]:
+          networks_to_revoke.append(RoutingInfo(network))
+
+        for network_route_pair in network_route_pairs:
+          for network_to_revoke in networks_to_revoke:
+            if network_route_pair[1].revokable(network_to_revoke):
+              self.remove_route(network_route_pair)
+              return True
         
         return True
 
     def get_networks_on_peer(self, peer):
         routes = []
-        for routes_list in self.routes.items():
+        for network, routes_list in self.routes.items():
             for route_info in routes_list:
                 if route_info.nextHop == peer:
-                    routes.append(route_info)
+                    routes.append([network, route_info])
         return routes
+
+    def remove_route(self, network_route_pair):
+        network = network_route_pair[0]
+        routeInfo = network_route_pair[1]
+        self.routes[network] = self.routes[network].remove(routeInfo)
+        if self.routes[network] == [] or self.routes[network] == None:
+           del self.routes[network]
+        
 
     def dump(self, packet):
         """ handles dump table requests """
@@ -311,8 +350,8 @@ class Router:
         self.dump(packet)
       elif (packet['type'] == DATA):
         self.forward(srcif, packet)
-      elif (packet['type'] === RVKE):
-        self.revoke(srcif, packet)
+      elif (packet['type'] == RVKE):
+        self.revoke(packet)
 
 
     def send_error(self, conn, msg):

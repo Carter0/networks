@@ -224,6 +224,11 @@ class Router:
           peer = routes[0].nextHop
         else:
           print("ROUTES:\t", str(len(routes)))
+
+        srcif_relationship = self.relations[srcif]
+        peer_relationship = self.relations[peer]
+        if not (srcif_relationship == "cust" or peer_relationship == "cust"):
+          peer = None
         return self.sockets[peer] if peer else None
 
     def noRoute(self, srcif, packet):
@@ -249,6 +254,8 @@ class Router:
         print(counter)
         '''
         #print("SENDING FORWARD")
+        #print("PACKET")
+        #print(packet) 
         peer.send(json.dumps(packet).encode())
         return True
 
@@ -283,14 +290,18 @@ class Router:
       update_packet['type'] = 'update'
       update_msg["ASPath"].append(self.asn)
       update_packet['msg'] = update_msg
-      counter = 0
+
+      srcif_relationship = self.relations[srcif]
+
       for network, s in self.sockets.items():
         if srcif != network:
-          self.create_ip_src(network)
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
           #print("SENDING UPDATE")
-          s.send(json.dumps(update_packet).encode())
+
+          network_relationship = self.relations[network]
+          if srcif_relationship == "cust" or network_relationship == "cust":
+            s.send(json.dumps(update_packet).encode())
       return True
 
     def create_ip_src(self, ip):
@@ -375,6 +386,8 @@ class Router:
 
 
     def send_error(self, conn, msg):
+        msg['dst'] = msg['src']
+        msg['src'] = self.create_ip_src(msg['src'])
         msg['type'] = "no route"
         #packet['src'] = self.create_ip_src(srcif) 
         msg['msg'] = {}

@@ -327,12 +327,12 @@ class Router:
                         if self.sockets[sock] == conn:
                             srcif = sock
                     msg = json.loads(k)
-                    print(msg)
-                    '''
+                    #print(msg)
+                    
                     if msg['type'] == DATA:
                       print("in run")
                       print(msg)
-                    '''
+                    
 
                     self.handle_packet(srcif, msg)
 

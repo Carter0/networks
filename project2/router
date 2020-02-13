@@ -295,18 +295,13 @@ class Router:
 
     def handle_packet(self, srcif, packet):
       """ dispatches a packet by determing the packets type """
+      print(packet)
       if (packet['type'] == UPDT):
         self.update(srcif, packet)
-        return True
       elif (packet['type'] == DUMP):
         self.dump(packet)
-        return True
       elif (packet['type'] == DATA):
-        # This is where the duplicate packets start appearing
-        # print("packet in handle packet")
-        # print(packet) 
         self.forward(srcif, packet)
-        return True
 
 
     def send_error(self, conn, msg):
@@ -329,15 +324,6 @@ class Router:
                         if self.sockets[sock] == conn:
                             srcif = sock
                     msg = json.loads(k)
-
-                    
-
-                    
-
-                  # Note : no duplicate packets here
-
-                    self.handle_packet(srcif, msg)
-                    # print(msg)
 
                     if not self.handle_packet(srcif, msg):
                         self.send_error(conn, msg)

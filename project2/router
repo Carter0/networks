@@ -198,14 +198,22 @@ class Router:
         #packet['src'] = self.create_ip_src(srcif) 
         packet['msg'] = {}
         print("NO ROUTE PACKET SENDING")
-        print(packet)
         self.sockets[srcif].send(json.dumps(packet).encode())
         return False
      
     def forward(self, srcif, packet):
       """ Forward a data packet """
-      self.get_route(srcif, packet["dst"]).send(json.dumps(packet).encode())
-      return False
+      int counter = 0
+      peer = self.get_route(srcif, packet["dst"])
+      if peer == None:
+        return False
+      else
+        print(packet)
+        print(peer) 
+        counter += 1
+        print(counter)
+        peer.send(json.dumps(packet).encode())
+        return True
 
     def coalesce(self):
         """ coalesce any routes that are right next to each other """
@@ -243,10 +251,6 @@ class Router:
       counter = 0
       for network, s in self.sockets.items():
         if srcif != network:
-          print(srcif)
-          print(network)
-          counter++
-          print(counter)
           self.create_ip_src(network)
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
@@ -294,8 +298,6 @@ class Router:
       elif (packet['type'] == DUMP):
         self.dump(packet)
       elif (packet['type'] == DATA):
-        #print("PACKET")
-        #print(packet)
         self.forward(srcif, packet)
       return False
 

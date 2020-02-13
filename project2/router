@@ -81,6 +81,7 @@ class Router:
     def __init__(self, networks, asn):
         self.routes = {}
         self.updates = {}
+        self.revokes = {}
         self.relations = {}
         self.sockets = {}
         self.asn = int(asn[0])
@@ -265,8 +266,19 @@ class Router:
 
     def revoke(self, packet):
         """ handle revoke packets """
-        # TODO
+        peer = packet['src']
+        self.revokes[peer] = packet
+        routes = self.get_networks_on_peer(peer)
+        
         return True
+
+    def get_networks_on_peer(self, peer):
+        routes = []
+        for routes_list in self.routes.items():
+            for route_info in routes_list:
+                if route_info.nextHop == peer:
+                    routes.append(route_info)
+        return routes
 
     def dump(self, packet):
         """ handles dump table requests """
@@ -299,6 +311,8 @@ class Router:
         self.dump(packet)
       elif (packet['type'] == DATA):
         self.forward(srcif, packet)
+      elif (packet['type'] === RVKE):
+        self.revoke(srcif, packet)
 
 
     def send_error(self, conn, msg):

@@ -214,9 +214,9 @@ class Router:
 
     def update(self, srcif, packet):
       """ handle update packets """
-      if srcif in self.updates:
+      if self.update[srcif] != None:
         return False
-
+        
       self.updates[srcif] = packet # Save update info for later.
       routingInfoObject = RoutingInfo(srcif, packet) # Make the routing info object.
       routingTableKey = routingInfoObject.cidr_network # Get the key from the object.

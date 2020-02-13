@@ -314,7 +314,7 @@ class Router:
     def remove_route(self, network_route_pair):
         network = network_route_pair[0]
         routeInfo = network_route_pair[1]
-        self.routes[network] = self.routes[network].remove(routeInfo)
+        self.routes[network].remove(routeInfo)
         if self.routes[network] == [] or self.routes[network] == None:
            del self.routes[network]
         

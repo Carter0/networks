@@ -257,7 +257,7 @@ class Router:
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
           s.send(json.dumps(update_packet).encode())
-      return False
+      return True
 
     def create_ip_src(self, ip):
         """Change ip to src ip"""
@@ -303,8 +303,8 @@ class Router:
         return True
       elif (packet['type'] == DATA):
         # This is where the duplicate packets start appearing
-        print("packet in handle packet")
-        print(packet) 
+        # print("packet in handle packet")
+        # print(packet) 
         self.forward(srcif, packet)
         return True
 
@@ -337,7 +337,7 @@ class Router:
                   # Note : no duplicate packets here
 
                     self.handle_packet(srcif, msg)
-                    print(msg)
+                    # print(msg)
 
                     if not self.handle_packet(srcif, msg):
                         self.send_error(conn, msg)

@@ -300,10 +300,10 @@ class Router:
       elif (packet['type'] == DUMP):
         self.dump(packet)
       elif (packet['type'] == DATA):
-        '''
+        
         print("packet in handle packet")
         print(packet)
-        '''
+        
         self.forward(srcif, packet)
       return False
 
@@ -328,11 +328,12 @@ class Router:
                             srcif = sock
                     msg = json.loads(k)
                     #print(msg)
+
                     
-                    if msg['type'] == DATA:
-                      print("in run")
-                      print(msg)
+
                     
+
+                  # Note : no duplicate packets here
 
                     self.handle_packet(srcif, msg)
 

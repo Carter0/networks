@@ -297,14 +297,17 @@ class Router:
       """ dispatches a packet by determing the packets type """
       if (packet['type'] == UPDT):
         self.update(srcif, packet)
+        return True
       elif (packet['type'] == DUMP):
         self.dump(packet)
+        return True
       elif (packet['type'] == DATA):
         # This is where the duplicate packets start appearing
         print("packet in handle packet")
         print(packet) 
         self.forward(srcif, packet)
         return True
+
 
     def send_error(self, conn, msg):
         """ Send a no_route error message """

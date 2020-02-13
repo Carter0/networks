@@ -208,10 +208,12 @@ class Router:
       if peer == None:
         return False
       else:
+        '''
         print(packet)
         print(peer) 
         counter += 1
         print(counter)
+        '''
         peer.send(json.dumps(packet).encode())
         return True
 
@@ -298,8 +300,10 @@ class Router:
       elif (packet['type'] == DUMP):
         self.dump(packet)
       elif (packet['type'] == DATA):
+        '''
         print("packet in handle packet")
         print(packet)
+        '''
         self.forward(srcif, packet)
       return False
 
@@ -323,13 +327,13 @@ class Router:
                         if self.sockets[sock] == conn:
                             srcif = sock
                     msg = json.loads(k)
+                    print(msg)
+                    '''
                     if msg['type'] == DATA:
                       print("in run")
                       print(msg)
+                    '''
 
-                    print("sockets are")
-                    for socket in self.sockets:
-                      print(socket)
                     self.handle_packet(srcif, msg)
 
                     if not self.handle_packet(srcif, msg):
@@ -344,6 +348,4 @@ if __name__ == "__main__":
     PARSER.add_argument('networks', metavar='networks',
                         type=str, nargs='+', help="networks")
     ARGS = PARSER.parse_args()
-    print("networks are")
-    print(ARGS.networks)
     Router(ARGS.networks, ARGS.asn).run()

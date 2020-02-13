@@ -203,11 +203,11 @@ class Router:
      
     def forward(self, srcif, packet):
       """ Forward a data packet """
-      int counter = 0
+      counter = 0
       peer = self.get_route(srcif, packet["dst"])
       if peer == None:
         return False
-      else
+      else:
         print(packet)
         print(peer) 
         counter += 1

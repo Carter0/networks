@@ -326,6 +326,10 @@ class Router:
                     if msg['type'] == DATA:
                       print("in run")
                       print(msg)
+
+                    print("sockets are")
+                    for socket in self.sockets:
+                      print(socket)
                     self.handle_packet(srcif, msg)
 
                     if not self.handle_packet(srcif, msg):
@@ -339,5 +343,7 @@ if __name__ == "__main__":
     PARSER.add_argument('asn', metavar='asn', type=str, nargs=1, help="asn")
     PARSER.add_argument('networks', metavar='networks',
                         type=str, nargs='+', help="networks")
+    print("networks are")
+    print(networks)
     ARGS = PARSER.parse_args()
     Router(ARGS.networks, ARGS.asn).run()

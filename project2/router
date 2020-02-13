@@ -312,8 +312,13 @@ class Router:
           for network_to_revoke in networks_to_revoke:
             if network_route_pair[1].revokable(network_to_revoke):
               self.remove_route(network_route_pair)
-              return True
+              #return True
         
+        for network, s in self.sockets.items():
+          if peer != network:
+            packet['src'] = self.create_ip_src(network)
+            packet['dst'] = network
+            s.send(json.dumps(packet).encode())
         return True
 
     def get_networks_on_peer(self, peer):

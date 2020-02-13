@@ -213,6 +213,12 @@ class Router:
         return False
 
     def update(self, srcif, packet):
+
+      # If this packet has already passed through here before, drop it.
+      update_msg = packet['msg']
+      if self.asn in update_msg["ASPath"]:
+        return False
+        
       """ handle update packets """
       self.updates[srcif] = packet # Save update info for later.
       routingInfoObject = RoutingInfo(srcif, packet) # Make the routing info object.
@@ -229,20 +235,18 @@ class Router:
       # Add an entry into our routing table
       self.routes[routingTableKey] = [routingInfoObject]
 
+      # Create the packet to broadcast.
       update_packet = {}
       update_packet['type'] = 'update'
-      update_packet['msg'] = packet['msg']
-      if not self.asn in update_msg["ASPath"]:
-        update_msg["ASPath"].append(self.asn)
-
+      update_msg["ASPath"].append(self.asn)
+      update_packet['msg'] = update_msg
       for network, s in self.sockets.items():
         if srcif != network:
           self.create_ip_src(network)
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network
           s.send(json.dumps(update_packet).encode())
-
-      return True
+      return False
 
     def create_ip_src(self, ip):
         """Change ip to src ip"""

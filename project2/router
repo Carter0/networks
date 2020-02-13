@@ -240,8 +240,13 @@ class Router:
       update_packet['type'] = 'update'
       update_msg["ASPath"].append(self.asn)
       update_packet['msg'] = update_msg
+      counter = 0
       for network, s in self.sockets.items():
         if srcif != network:
+          print(srcif)
+          print(network)
+          counter++
+          print(counter)
           self.create_ip_src(network)
           update_packet['src'] = self.create_ip_src(network)
           update_packet['dst'] = network

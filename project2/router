@@ -133,6 +133,7 @@ class Router:
         for route in routes:
            aspath_length = len(route.asPath)
            if aspath_length < shortest_length:
+             shortest_length = aspath_length
              outroutes = [route]
            elif aspath_length == shortest_length:
              outroutes.append(route)
@@ -344,6 +345,10 @@ class Router:
 
     def handle_packet(self, srcif, packet):
       """ dispatches a packet by determing the packets type """
+      #print("PACKET")
+      #print(packet)
+      #print("SRCIF")
+      #print(srcif)
       if (packet['type'] == UPDT):
         self.update(srcif, packet)
       elif (packet['type'] == DUMP):
@@ -351,6 +356,7 @@ class Router:
       elif (packet['type'] == DATA):
         self.forward(srcif, packet)
       elif (packet['type'] == RVKE):
+        print("REVOKE PACKET")
         self.revoke(packet)
 
 

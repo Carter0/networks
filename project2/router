@@ -103,11 +103,6 @@ class RoutingInfo:
     o = self.origin == other.origin
     bin_hm = list(str(bin(int(self.cidr_network.network_address))))
     bin_hm_other = list(str(bin(int(other.cidr_network.network_address))))
-    print("HOSTMASKS")
-    print(bin_hm)
-    print(bin_hm_other)
-    print(self.cidr_network.network_address)
-    print(other.cidr_network.network_address)
     for (sbd, obd, count) in zip(bin_hm[2:], bin_hm_other[2:], range(self.mask_count)):
       if sbd != obd and count == (self.mask_count - 1):
         return h and l and m and p and o
@@ -299,12 +294,7 @@ class Router:
           for route in routes:
             other_routes.remove(route)
             for other_route in other_routes:
-              
-              print("CAN AGGREGATE?")
-              print(route)
-              print(other_route)
               if route.can_aggregate(other_route):
-                 print("WE CAN AGGREGATE")
                  # remove route and other route from self.routes
                  # then add the new coalesced route to self.routes
                  newRoute = route.aggregate(other_route)
@@ -384,8 +374,13 @@ class Router:
         network_route_pairs = self.get_networks_on_peer(peer)
         networks_to_revoke = []
         for network in packet["msg"]:
-          updatesForReAdd = filter(lambda x: (x["network"] == network["network"] and x["netmask"] == network[netmask]), self.updates[peer])
+          self.updates[peer] = list(filter(lambda x: (x["msg"]["network"] != network["network"] or  x["msg"]["netmask"] != network["netmask"]), self.updates[peer]))
           networks_to_revoke.append(RoutingInfo(network))
+          #for update in self.updates[peer]:
+           # if update['msg']["network"] == network["network"] and update['msg']["netmask"] == network["netmask"]:
+            #  self.updates[peer].remove(update)
+
+        self.remake_routing_table()
 
         for network_route_pair in network_route_pairs:
           for network_to_revoke in networks_to_revoke:
@@ -399,6 +394,19 @@ class Router:
             packet['dst'] = network
             s.send(json.dumps(packet).encode())
         return True
+
+    def remake_routing_table(self):
+      newRoutingTable = {}
+      for srcif, updates in self.updates.items():
+        for update in updates:
+          if update['src'] in newRoutingTable.keys():
+            newRoutingTable[update['src']].append(RoutingInfo(update, srcif = update['src']))
+          else:
+            newRoutingTable[update['src']] = [RoutingInfo(update, srcif = update['src'])]
+      self.routes = newRoutingTable
+      while self.coalesce():
+        self.coalesce() 
+      
 
     def get_networks_on_peer(self, peer):
         routes = []

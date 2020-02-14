@@ -279,7 +279,6 @@ class Router:
 
     def coalesce(self):
         """ coalesce any routes that are right next to each other """
-        # TODO (this is the most difficult task, save until last)
         prefix_len_dict = {}
         for network, routes in self.routes.items():
           for route in routes:
@@ -374,11 +373,8 @@ class Router:
         network_route_pairs = self.get_networks_on_peer(peer)
         networks_to_revoke = []
         for network in packet["msg"]:
-          self.updates[peer] = list(filter(lambda x: (x["msg"]["network"] != network["network"] or  x["msg"]["netmask"] != network["netmask"]), self.updates[peer]))
+          self.updates[peer] = list(filter(lambda x: (x["msg"]["network"] != network["network"] or x["msg"]["netmask"] != network["netmask"]), self.updates[peer]))
           networks_to_revoke.append(RoutingInfo(network))
-          #for update in self.updates[peer]:
-           # if update['msg']["network"] == network["network"] and update['msg']["netmask"] == network["netmask"]:
-            #  self.updates[peer].remove(update)
 
         self.remake_routing_table()
 
@@ -399,10 +395,11 @@ class Router:
       newRoutingTable = {}
       for srcif, updates in self.updates.items():
         for update in updates:
-          if update['src'] in newRoutingTable.keys():
-            newRoutingTable[update['src']].append(RoutingInfo(update, srcif = update['src']))
+          newRoute = RoutingInfo(update, srcif = update['src'])
+          if newRoute.cidr_network in newRoutingTable.keys():
+            newRoutingTable[newRoute.cidr_network].append(newRoute)
           else:
-            newRoutingTable[update['src']] = [RoutingInfo(update, srcif = update['src'])]
+            newRoutingTable[newRoute.cidr_network] = [newRoute]
       self.routes = newRoutingTable
       while self.coalesce():
         self.coalesce() 

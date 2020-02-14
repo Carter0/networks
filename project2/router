@@ -203,7 +203,7 @@ class Router:
         for route in routes:
           peer = route.nextHop
           peer_relationship = self.relations[peer]
-          if srcif_relationship == "cust" or peer_relationship == "cust":
+          if srcif_relationship == CUST or peer_relationship == CUST:
             outroutes.append(route)
           else:
             print("FAILED ROUTE:")
@@ -245,18 +245,8 @@ class Router:
       counter = 0
       peer = self.get_route(srcif, packet["dst"])
       if peer == None:
-        #self.noRoute(srcif, packet)
         return False
       else:
-        '''
-        print(packet)
-        print(peer) 
-        counter += 1
-        print(counter)
-        '''
-        #print("SENDING FORWARD")
-        #print("PACKET")
-        #print(packet) 
         peer.send(json.dumps(packet).encode())
         return True
 
@@ -301,7 +291,7 @@ class Router:
           #print("SENDING UPDATE")
 
           network_relationship = self.relations[network]
-          if srcif_relationship == "cust" or network_relationship == "cust":
+          if srcif_relationship == CUST or network_relationship == CUST:
             s.send(json.dumps(update_packet).encode())
       return True
 
@@ -387,7 +377,8 @@ class Router:
 
 
     def send_error(self, conn, msg):
-        #msg['dst'] = msg['src']
+        """ Send a no_route error message """
+        msg['dst'] = msg['src']
         print("MESSAGE WE CANT ROUTE")
         print(msg)
         listofsockets = [network for (network, socket) in self.sockets.items() if socket == conn]
@@ -398,8 +389,6 @@ class Router:
         msg['msg'] = {}
         #print("NO ROUTE PACKET SENDING")
         conn.send(json.dumps(msg).encode())
-        """ Send a no_route error message """
-        # TODO
         return
 
     def run(self):

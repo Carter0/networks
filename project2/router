@@ -39,10 +39,12 @@ PROV = "prov"
 
 
 ##########################################################################################
-
+'''
+ This class contains all the relevant information about what kind of routing information is needed for the routing table.
+ It also contains any helper functions needed to make and aggregate the routing table.
+'''
 class RoutingInfo:
   """ This class will be the data of the routing table """
-
   def __init__(self, packet, srcif = None):
     if srcif == None:
       self.revoke_init(packet)
@@ -58,10 +60,7 @@ class RoutingInfo:
        if i == "1":
          self.mask_count += 1
     self.cidr_network = ipaddress.ip_network(msg['network'] + "/" + str(self.mask_count))
-    ## Mystery line 
-    ## self.cidr_network.netmask = binary_netmask
-    ## ip_network has String override that does binary and for us.
-    self.network = str(self.cidr_network).split("/")[0]#  msg['network']
+    self.network = str(self.cidr_network).split("/")[0]
     self.netmask = msg['netmask']
     self.nextHop = srcif
     self.asPath = msg['ASPath']
@@ -131,11 +130,19 @@ class Router:
     """ Your Router """
 
     def __init__(self, networks, asn):
-        self.routes = {}
+        # Our routing table is a dictionary to a list of RoutingInfo objects above.
+        # Our routing table has a key of a cidr network.
+        self.routes = {} 
+        # Updates is also a hashmap where the key is the src ip and the value if a list of all the update messages from 
+        # that ip.
         self.updates = {}
+        # Same as updates, key is src, value is a list of revokes
         self.revokes = {}
+        # Relationships is a hashmap where the key is the src and the value is the relationship.
         self.relations = {}
+        # A dictionary of all the sockets.
         self.sockets = {}
+        # Our asn number.
         self.asn = int(asn[0])
         for relationship in networks:
             network, relation = relationship.split("-")
@@ -221,6 +228,7 @@ class Router:
         return outroutes
 
     def get_lowest_ip(self, routes):
+      """ gets the lowerst ip address in the given list of ip addresses """
       outroutes = []
       lowest_ip = ipaddress.IPv4Address("255.255.255.255")
       for route in routes:
@@ -245,7 +253,6 @@ class Router:
 
     def get_route(self, srcif, daddr):
         """ Select the best route for a given address """
-        # TODO
         peer = None
         routes = self.lookup_routes(daddr)
         # Rules go here
@@ -392,6 +399,7 @@ class Router:
         return True
 
     def remake_routing_table(self):
+      """ Remake the routing table when the networks on it are coalesceing or disaggregating """
       newRoutingTable = {}
       for srcif, updates in self.updates.items():
         for update in updates:
@@ -406,6 +414,7 @@ class Router:
       
 
     def get_networks_on_peer(self, peer):
+      """ get all networks that go to this peer """
         routes = []
         for network, routes_list in self.routes.items():
             for route_info in routes_list:
@@ -414,6 +423,7 @@ class Router:
         return routes
 
     def remove_route(self, network_route_pair):
+        """ delete routes in the routing table with no routing information on them """
         network = network_route_pair[0]
         routeInfo = network_route_pair[1]
         self.routes[network].remove(routeInfo)
@@ -480,7 +490,9 @@ class Router:
                         if self.sockets[sock] == conn:
                             srcif = sock
                     msg = json.loads(k)
-
+                    
+                    # Try to handle the packet, but if you can't, then 
+                    # return a no route message to the sending neighbor.
                     if not self.handle_packet(srcif, msg):
                         self.send_error(conn, msg)
                 else:

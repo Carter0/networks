@@ -197,7 +197,6 @@ class Router:
 
     def get_self_origin(self, routes):
         """ select self originating routes """
-        # TODO
         outroutes = []
         we_true_yet = False
         for route in routes:
@@ -213,7 +212,6 @@ class Router:
 
     def get_origin_routes(self, routes):
         """ select origin routes: IGP > EGP > UNK """
-        # TODO
         outroutes = []
         
         ranks = ["IGP", "EGP", "UNK"]
@@ -322,14 +320,19 @@ class Router:
         return did_we_coalesce
 
     def update(self, srcif, packet):
+       """ handle update packets """
 
       # If this packet has already passed through here before, drop it.
       update_msg = packet['msg']
       if self.asn in update_msg["ASPath"]:
         return False
         
-      """ handle update packets """
-      self.updates[srcif] = packet # Save update info for later.
+     
+      if self.updates[srcif]:
+        self.updates[srcif] = [packet]
+      else: 
+        self.updates[srcif].append(packet)
+
       routingInfoObject = RoutingInfo(packet, srcif=srcif) # Make the routing info object.
       routingTableKey = routingInfoObject.cidr_network # Get the key from the object.
 
@@ -371,7 +374,11 @@ class Router:
     def revoke(self, packet):
         """ handle revoke packets """
         peer = packet['src']
-        self.revokes[peer] = packet
+        if self.revokes[peer]:
+          self.revokes[peer] = packet
+        else: 
+          self.revokes[peer].append(packet)
+          
         network_route_pairs = self.get_networks_on_peer(peer)
         networks_to_revoke = []
         for network in packet["msg"]:

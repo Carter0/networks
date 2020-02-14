@@ -327,7 +327,9 @@ class Router:
       if self.asn in update_msg["ASPath"]:
         return False
       
-      if self.updates[srcif]:
+
+      
+      if srcif not in self.updates.keys():
         self.updates[srcif] = [packet]
       else: 
         self.updates[srcif].append(packet)
@@ -373,7 +375,7 @@ class Router:
     def revoke(self, packet):
         """ handle revoke packets """
         peer = packet['src']
-        if self.revokes[peer]:
+        if peer not in self.revokes.keys():
           self.revokes[peer] = packet
         else: 
           self.revokes[peer].append(packet)

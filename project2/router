@@ -371,18 +371,20 @@ class Router:
         iplist = ip.split(".")
         iplist[3] = "1"
         return ".".join(iplist)
-
+    
     def revoke(self, packet):
         """ handle revoke packets """
         peer = packet['src']
         if peer not in self.revokes.keys():
           self.revokes[peer] = [packet]
-        else: 
+        else:  
           self.revokes[peer].append(packet)
+
 
         network_route_pairs = self.get_networks_on_peer(peer)
         networks_to_revoke = []
         for network in packet["msg"]:
+          updatesForReAdd = filter(lambda x: (x["network"] == network["network"] and x["netmask"] == network[netmask]), self.updates[peer])
           networks_to_revoke.append(RoutingInfo(network))
 
         for network_route_pair in network_route_pairs:

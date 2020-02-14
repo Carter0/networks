@@ -1,10 +1,9 @@
-Hey all, this one was sort of fun. TIme crunch made it difficult to follow a coherent design but we did it lads.
+In this assignment, the hardest part was getting started and figuring out what was generally going on. Once that was done, we just followed the tests one at a time.
 
-For this we started with building the Routing table, by using a RoutingInfo object and doing the bitwise operations there.
+The level two tests were difficult for us because we were accidentally calling handle packet twice and therefore duplicating all the packets were giving to our program. Once we figured that out, getting tests 2 and 3 to pass was not too bad.
 
-Next we dumped our table to make sure the routing table was working properly and we knew how to send packets,
-to the apropriate location.
+Writing revoke also took a little while because we were not sure how to broadcast the messages. Also, we needed to get the right information from our routing table, which took a little time. 
 
-Finally we worked on update, we obviously did the part with the routing table here first but then we finished it,
-by creating the apropaite packet, by changing the src dst and ASPath of the message, then sending out the
- apropriate update packet to the apropriate hosts.
+Sending no route also proved a little challenging for us, but we did it. 
+
+We mostly tested our code using the provided tests given to us.

@@ -95,7 +95,7 @@ class RoutingInfo:
     return n and m
 
   def __str__(self):
-    f'Routing info is =>  network: {self.network}, netmask: {self.netmask}, nextHop: {self.nextHop}, asPath: {self.asPath}, localPref: {self.localPref}'
+    return f'Routing info is =>  network: {self.network}, netmask: {self.netmask}, nextHop: {self.nextHop}, asPath: {self.asPath}, localPref: {self.localPref}'
 
 
 class Router:
@@ -198,7 +198,22 @@ class Router:
     def filter_relationships(self, srcif, routes):
         """ Don't allow Peer->Peer, Peer->Prov, or Prov->Peer forwards """
         outroutes = []
-        outroutes = routes
+        srcif_relationship = self.relations[srcif]
+
+        for route in routes:
+          peer = route.nextHop
+          peer_relationship = self.relations[peer]
+          if srcif_relationship == "cust" or peer_relationship == "cust":
+            outroutes.append(route)
+          else:
+            print("FAILED ROUTE:")
+            print(route)
+            print("SRCIF:\t" + srcif)
+            print(srcif_relationship)
+            print("PEER:\t" + peer)
+            print(peer_relationship)
+            
+          
         return outroutes
 
     def get_route(self, srcif, daddr):
@@ -222,23 +237,9 @@ class Router:
             routes = self.filter_relationships(srcif, routes)
         if len(routes) == 1:
           peer = routes[0].nextHop
-        else:
-          print("ROUTES:\t", str(len(routes)))
 
-        srcif_relationship = self.relations[srcif]
-        peer_relationship = self.relations[peer]
-        if not (srcif_relationship == "cust" or peer_relationship == "cust"):
-          peer = None
         return self.sockets[peer] if peer else None
 
-    def noRoute(self, srcif, packet):
-        packet['type'] = "no route"
-        #packet['src'] = self.create_ip_src(srcif) 
-        packet['msg'] = {}
-        #print("NO ROUTE PACKET SENDING")
-        self.sockets[srcif].send(json.dumps(packet).encode())
-        return False
-     
     def forward(self, srcif, packet):
       """ Forward a data packet """
       counter = 0
@@ -374,21 +375,25 @@ class Router:
     def handle_packet(self, srcif, packet):
       """ dispatches a packet by determing the packets type """
       if (packet['type'] == UPDT):
+        print("UPDATE")
+        print(packet)
         return self.update(srcif, packet)
       elif (packet['type'] == DUMP):
         return self.dump(packet)
       elif (packet['type'] == DATA):
         return self.forward(srcif, packet)
       elif (packet['type'] == RVKE):
-        #print("REVOKE PACKET")
-        #print(packet)
         return self.revoke(packet)
 
 
     def send_error(self, conn, msg):
-        msg['dst'] = msg['src']
-        msg['src'] = self.create_ip_src(msg['src'])
-        msg['type'] = "no route"
+        #msg['dst'] = msg['src']
+        print("MESSAGE WE CANT ROUTE")
+        print(msg)
+        listofsockets = [network for (network, socket) in self.sockets.items() if socket == conn]
+        print("List of sockets:\t" + str(listofsockets))
+        msg['src'] = self.create_ip_src(listofsockets[0])
+        msg['type'] = NRTE 
         #packet['src'] = self.create_ip_src(srcif) 
         msg['msg'] = {}
         #print("NO ROUTE PACKET SENDING")

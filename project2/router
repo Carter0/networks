@@ -6,6 +6,7 @@ import json
 import select
 import socket
 import ipaddress
+import copy
 
 ##########################################################################################
 
@@ -80,11 +81,36 @@ class RoutingInfo:
     self.network = str(self.cidr_network).split("/")[0]#  msg['network']
     self.netmask = msg['netmask']
 
-  def can_aggregate(self, other_route):
-    mc = self.mask_count == other_route.mask_count
-    for sbd, obd, count in self.cidr_network.hostmask, other.cidr_network.hostmask, range(self.mask_count):
+  def aggregate(self, other_route):
+    newRoute = copy.deepcopy(self)
+    newRoute.mask_count = self.mask_count - 1
+    binary_netmask = []
+    for i in range(newRoute.mask_count):
+      binary_netmask.append("1")
+    for i in range(32-newRoute.mask_count):
+      binary_netmask.append("0")
+    binary_netmask = ipaddress.IPv4Address(int(int("".join(binary_netmask), 2)))
+    newRoute.netmask = str(binary_netmask)
+    newRoute.cidr_network = ipaddress.ip_network(newRoute.network + "/" + str(newRoute.mask_count))
+    
+    return newRoute
+
+  def can_aggregate(self, other):
+    h = self.nextHop == other.nextHop
+    l = self.localPref == other.localPref
+    m = self.mask_count == other.mask_count
+    p = self.asPath == other.asPath
+    o = self.origin == other.origin
+    bin_hm = list(str(bin(int(self.cidr_network.network_address))))
+    bin_hm_other = list(str(bin(int(other.cidr_network.network_address))))
+    print("HOSTMASKS")
+    print(bin_hm)
+    print(bin_hm_other)
+    print(self.cidr_network.network_address)
+    print(other.cidr_network.network_address)
+    for (sbd, obd, count) in zip(bin_hm[2:], bin_hm_other[2:], range(self.mask_count)):
       if sbd != obd and count == (self.mask_count - 1):
-        return mc
+        return h and l and m and p and o
     return False
     
 
@@ -267,7 +293,7 @@ class Router:
             if route.mask_count in prefix_len_dict.keys():
               prefix_len_dict[route.mask_count].append(route)
             else:
-              prefix_len_dict[route.mask_count = [route]
+              prefix_len_dict[route.mask_count] = [route]
 
         did_we_coalesce = False
         for mask_count, routes in prefix_len_dict.items():
@@ -275,13 +301,25 @@ class Router:
           for route in routes:
             other_routes.remove(route)
             for other_route in other_routes:
+              
+              print("CAN AGGREGATE?")
+              print(route)
+              print(other_route)
               if route.can_aggregate(other_route):
+                 print("WE CAN AGGREGATE")
                  # remove route and other route from self.routes
                  # then add the new coalesced route to self.routes
-                 # can coalesce checks to see if they have the same hop
-                 # and if the  
-          
-        return False
+                 newRoute = route.aggregate(other_route)
+                 self.routes[route.cidr_network].remove(route)
+                 self.routes[other_route.cidr_network].remove(other_route)
+                 if newRoute.cidr_network in self.routes.keys():
+                   self.routes[newRoute.cidr_network].append(newRoute)
+                 else:
+                   self.routes[newRoute.cidr_network] = [newRoute]
+                 did_we_coalesce = True
+                 other_routes.remove(other_route)
+                 routes.remove(route)
+        return did_we_coalesce
 
     def update(self, srcif, packet):
 
@@ -320,6 +358,8 @@ class Router:
           network_relationship = self.relations[network]
           if srcif_relationship == CUST or network_relationship == CUST:
             s.send(json.dumps(update_packet).encode())
+      while self.coalesce():
+        self.coalesce()
       return True
 
     def create_ip_src(self, ip):

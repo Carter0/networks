@@ -426,10 +426,12 @@ class Router:
         """ delete routes in the routing table with no routing information on them """
         network = network_route_pair[0]
         routeInfo = network_route_pair[1]
-        self.routes[network].remove(routeInfo)
-        if self.routes[network] == [] or self.routes[network] == None:
+        if self.routes[network] != [] or self.routes[network] != None:        self.routes[network].remove(routeInfo)
+           self.routes[network].remove(routeInfo)
            del self.routes[network]
-        
+        else:
+           del self.routes[network]
+
 
     def dump(self, packet):
         """ handles dump table requests """

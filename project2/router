@@ -320,14 +320,13 @@ class Router:
         return did_we_coalesce
 
     def update(self, srcif, packet):
-       """ handle update packets """
-
+      """ handle update packets """
+      
       # If this packet has already passed through here before, drop it.
       update_msg = packet['msg']
       if self.asn in update_msg["ASPath"]:
         return False
-        
-     
+      
       if self.updates[srcif]:
         self.updates[srcif] = [packet]
       else: 

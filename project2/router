@@ -376,7 +376,7 @@ class Router:
         """ handle revoke packets """
         peer = packet['src']
         if peer not in self.revokes.keys():
-          self.revokes[peer] = packet
+          self.revokes[peer] = [packet]
         else: 
           self.revokes[peer].append(packet)
 

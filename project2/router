@@ -414,7 +414,7 @@ class Router:
       
 
     def get_networks_on_peer(self, peer):
-      """ get all networks that go to this peer """
+        """ get all networks that go to this peer """
         routes = []
         for network, routes_list in self.routes.items():
             for route_info in routes_list:

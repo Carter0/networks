@@ -378,7 +378,7 @@ class Router:
           self.revokes[peer] = packet
         else: 
           self.revokes[peer].append(packet)
-          
+
         network_route_pairs = self.get_networks_on_peer(peer)
         networks_to_revoke = []
         for network in packet["msg"]:

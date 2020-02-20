@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+
+import sys
+import socket
+import datetime
+import json
+
+MSG_SIZE = 1500
+TIMEOUT = 30
+
+def log(string):
+  sys.stderr.write(datetime.datetime.now().strftime("%H:%M:%S.%f") + " " + string + "\n")
+  sys.stderr.flush()
+
+def main():
+  # Bind to localhost and an ephemeral port
+  udp_ip = "127.0.0.1"
+  udp_port = 0
+
+  # Set up the socket
+  sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  sock.bind((udp_ip, udp_port))
+  sock.settimeout(TIMEOUT)
+
+  # Get port we bound to
+  udp_port = sock.getsockname()[1]
+  log(f"[bound] {udp_port}")
+
+  # Now listen for packets
+  while True:
+    result = sock.recvfrom(MSG_SIZE)
+
+    # If nothing is ready, we hit the timeout
+    if result:
+      (data, addr) = result
+      data = data.decode('ascii')
+
+      try:
+        decoded = json.loads(data)
+
+        # If the EOF flag is set, exit
+        if decoded['eof']:
+          log("[completed]")
+          sys.exit(0)
+
+        # If there is data, we accept it and print it out
+        if decoded['data']:
+          # If we receive data, we assume it's in-order
+          # You will need to do much more here
+          log(f"[recv data] {decoded['sequence']} ({len(decoded['data'])}) ACCEPTED (in-order)")
+          sys.stdout.write(decoded['data'])
+
+        # Send back an ack to the sender
+        msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data'])})
+        log("ABOUT TO SEND " + msg)
+        if sock.sendto(msg.encode('ascii'), addr) < len(msg):
+          log("[error] unable to fully send packet")
+
+      except (ValueError, KeyError, TypeError) as exc:
+        log("[recv corrupt packet]")
+        raise exc
+    else:
+      log("[error] timeout")
+      sys.exit(-1)
+
+if __name__ == '__main__':
+  main()

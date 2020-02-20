@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""
+netsim.py
+"""
+
+import argparse
+#import os
+import subprocess
+
+VERSION = "0.1rPy"
+TC_ID = 1
+
+
+def ok(result):
+  """
+  ok : subprocess.CompletedProcess -> None
+
+  helper method asserts that command exited ok (ec=0), raising SystemError otherwise
+  PANICS (SystemError): Command did not exit okay
+  """
+  if result.returncode != 0:
+    raise subprocess.CalledProcessError("Process exited not okay", result.args, result.returncode)
+
+def ignore(_):
+  """
+  ignore : subprocess.CompletedProcess -> None
+
+  ignore result of command
+  """
+
+def count_lines(cmd):
+  """
+  count_lines : []String -> int
+
+  helper method counts lines of output resulting from running command as sudo
+  PANICS (CalledProcessError): when process returns non-zero exit code
+  """
+  result = go_sudo(cmd, check=True, stdout=subprocess.PIPE, encoding='ascii')
+  return len(result.stdout.split("\n"))
+
+def go_sudo(cmd, **kwargs):
+  """
+  go_sudo []String x Dict? -> subprocess.CompletedProcess
+
+  helper method for running commands as sudo
+  """
+  print(f"CMD: {cmd:s}")
+  cmd = cmd.strip().split(" ")
+  cmd.insert(0, "/usr/bin/sudo")
+  return subprocess.run(cmd, **kwargs)
+
+def pct(v_str):
+  """
+  pct : String -> None
+
+  helper method to validate that a given input is within the range [0, 99]
+  PANICS (ValueError): String cannot be coerced to an integer
+  PANICS (ValueError): Percentage String falls outside valid range
+  """
+  val = int(v_str)
+  if val < 0:
+    raise ValueError(f"Percentage {val} < 0")
+  if val > 99:
+    raise ValueError(f"Percentage {val} > 99")
+  return val
+
+def main():
+  """ module main """
+  parser = argparse.ArgumentParser(f"netsim v{VERSION}")
+  parser.add_argument("--bandwidth", metavar="NUM", type=float, default=1,
+                      help="bandwidth of link in Mb/s. Default 1, range [0.001, 10]")
+  parser.add_argument("--latency", metavar="NUM", type=int, default=10,
+                      help="latency of link in milliseconds. Default 10, range [10, 5000]")
+  parser.add_argument("--delay", metavar="PERCENT", type=pct, default=0,
+                      help="percent of packets to be delayed. Default 0, range [0, 99]")
+  parser.add_argument("--drop", metavar="PERCENT", type=pct, default=0,
+                      help="percent of packets to be dropped. Default 0, range [0, 99]")
+  parser.add_argument("--reorder", metavar="PERCENT", type=pct, default=0,
+                      help="percent of packets to be reordered. Default 0, range [0, 99]")
+  parser.add_argument("--duplicate", metavar="PERCENT", type=pct, default=0,
+                      help="percent of packets to be duplicated. Default 0, range [0, 99]")
+  parser.add_argument("--corrupt", metavar="PERCENT", type=pct, default=0,
+                      help="percent of packets to be corrupted. Default 0, range [0, 99]")
+  args = parser.parse_args()
+
+  print("CHECK: lo device present")
+  if go_sudo(f"tc qdisc change dev lo root").returncode != 0:
+    print("CREATE: lo device")
+    ok(go_sudo(f"tc qdisc add dev lo root netem"))
+
+  print(f"SET: bandwidth: {args.bandwidth} Mb/s, latency: {args.latency} ms, "
+        f"delay: {args.delay}, drop: {args.drop}, reorder: {args.reorder}, "
+        f"duplicate: {args.duplicate}, corrupt: {args.corrupt}")
+  ok(go_sudo(f"tc qdisc change dev lo root netem "
+             f"rate {args.bandwidth}Mbps "
+             f"delay {args.latency:d}ms {args.delay:d}ms "
+             f"drop {args.drop:.1f}% "
+             f"corrupt {args.corrupt:.1f}% "
+             f"duplicate {args.duplicate:.1f}% "
+             f"reorder {args.reorder:.1f}% 20% "))
+
+if __name__ == '__main__':
+  try:
+    main()
+  except subprocess.CalledProcessError:
+    print("System Error")

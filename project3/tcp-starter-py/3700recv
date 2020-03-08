@@ -8,6 +8,7 @@ import json
 MSG_SIZE = 1500
 TIMEOUT = 30
 
+<<<<<<< HEAD
 class PacketReciever:
 
   def __init__(self):
@@ -20,6 +21,19 @@ class PacketReciever:
     else:
       self.seq_nums.append(seq_num)
       return False
+=======
+'''
+TLDR: For Carter who is an idiot and needs reminders
+The goal of this is to send reliable packets from the sender to the recv. 
+We will need to test this in a variety of ways using the netsim.
+
+We need a basic way to deal with duplicate packets
+We also need a way to deal with out of order packets
+
+TMR: Handle duplicate packets. 
+     Figure out how to handle out of order packets.Probably possible with the header information.
+'''
+>>>>>>> 049dcd7a656b04537a566dbdf83569d146f96b08
 
 def log(string):
   sys.stderr.write(datetime.datetime.now().strftime("%H:%M:%S.%f") + " " + string + "\n")

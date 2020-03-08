@@ -8,14 +8,31 @@ import json
 MSG_SIZE = 1500
 TIMEOUT = 30
 
+class PacketReciever:
+
+  def __init__(self):
+    packets = []
+    seq_nums = []
+
+  def check_duplicates(self, seq_num):
+    if seq_number in seq_numbers:
+      return True
+    else:
+      self.seq_nums.append(seq_num)
+      return False
+
 def log(string):
   sys.stderr.write(datetime.datetime.now().strftime("%H:%M:%S.%f") + " " + string + "\n")
   sys.stderr.flush()
+
 
 def main():
   # Bind to localhost and an ephemeral port
   udp_ip = "127.0.0.1"
   udp_port = 0
+
+  #Keep track of packet info
+  packets = PacketReciever()
 
   # Set up the socket
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -47,14 +64,16 @@ def main():
         if decoded['data']:
           # If we receive data, we assume it's in-order
           # You will need to do much more here
+          
           log(f"[recv data] {decoded['sequence']} ({len(decoded['data'])}) ACCEPTED (in-order)")
           sys.stdout.write(decoded['data'])
 
         # Send back an ack to the sender
-        msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data'])})
-        log("ABOUT TO SEND " + msg)
-        if sock.sendto(msg.encode('ascii'), addr) < len(msg):
-          log("[error] unable to fully send packet")
+        if not packets.check_duplicates(decoded['sequence']):
+          msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data'])})
+          log("ABOUT TO SEND " + msg)
+          if sock.sendto(msg.encode('ascii'), addr) < len(msg):
+            log("[error] unable to fully send packet")
 
       except (ValueError, KeyError, TypeError) as exc:
         log("[recv corrupt packet]")

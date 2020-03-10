@@ -4,19 +4,49 @@ import sys
 import socket
 import datetime
 import json
+import time
+
+
+'''
+Note: We are going to need to implement sliding window 
+and dropped packets in here
+'''
+
+'''
+Dropped packet idea
+
+So, sock.settimeout already disconnects the socket after a certain amount of time.
+I need to catch that error and instead resend the packet. 
+'''
+
+# keep a copy of the last packet sent incase it gets dropped.
+lastMsg = None
+
+# Keep an estimate of the roundtriptime
+rtt = 10
 
 MSG_SIZE = 1500
 DATA_SIZE = 1472
-TIMEOUT = 30
+TIMEOUT = 1
+
 
 def log(string):
   sys.stderr.write(datetime.datetime.now().strftime("%H:%M:%S.%f") + " " + string + "\n")
   sys.stderr.flush()
 
 def send_next_packet(seqn, sock, dest):
+
   msg = {"sequence": seqn, "data": "", "ack": False, "eof": False}
   overhead = len(json.dumps(msg))
   msg["data"] = sys.stdin.read(DATA_SIZE - overhead)
+  
+  # Save a copy of the msg
+  global lastMsg
+  lastMsg = msg
+
+  # most of the time it will get into the if statement,
+  # it only won't when there is nothing else to read in from standard in, 
+  # ie. that is the last packet to send
   if len(msg["data"]) > 0:
     assert (len(msg) <= DATA_SIZE), f"ERROR: Datagram is longer ({len(msg)}) than {DATA_SIZE} bytes!!!"
 
@@ -35,9 +65,16 @@ def main():
   dest = (udp_ip, udp_port)
   seqn = 0
 
+  global rtt
+
   # Set up the socket
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   sock.settimeout(TIMEOUT)
+
+  result = None
+
+  # Start the timer needed to calc RTT 
+  startTime = time.time()
 
   # Send first packet
   seqn = send_next_packet(seqn, sock, dest)
@@ -45,7 +82,17 @@ def main():
   # Now read in data, send packets
   while True:
     log("ABOUT TO SLEEP")
-    result = sock.recvfrom(MSG_SIZE)
+
+    try:
+      # recvfrom blocks until it gets something
+      result = sock.recvfrom(MSG_SIZE)
+      rtt = time.time() - startTime
+
+    except socket.timeout as timeoutException:
+      log("Caught a dropped packet")
+      log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")
+      sock.sendto(json.dumps(lastMsg).encode('ascii'), dest)
+      continue
 
     if result:
       (data, _addr) = result

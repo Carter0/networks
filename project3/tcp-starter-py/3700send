@@ -13,21 +13,28 @@ and dropped packets in here
 '''
 
 '''
-Dropped packet idea
+Dropped packets
 
-So, sock.settimeout already disconnects the socket after a certain amount of time.
-I need to catch that error and instead resend the packet. 
+Problem is that it sends a packet, makes it to the recv, the recv increments the sqn counter, then the ack drops. Once the ack drops, the sender resends, but since the sqn number counter is different in the 
+recv, it drops the packet. Then this cycle emerges
+
+Alright so I wrote a lot of the same code that was in send in recv cause I need to resend the ack if the ack gets dropped. Also I wrote the rtt calculation in send to. 
+
+Problem is I am not sure I need to do that. I am also not sure if doing that makes the resend field necessary. 
+
+TODO: Think about whether you needed to write all this in recv lol. 
+
 '''
 
 # keep a copy of the last packet sent incase it gets dropped.
 lastMsg = None
 
 # Keep an estimate of the roundtriptime
-rtt = 10
+rtt = 4
 
 MSG_SIZE = 1500
 DATA_SIZE = 1472
-TIMEOUT = 1
+TIMEOUT = rtt
 
 
 def log(string):
@@ -36,10 +43,13 @@ def log(string):
 
 def send_next_packet(seqn, sock, dest):
 
-  msg = {"sequence": seqn, "data": "", "ack": False, "eof": False}
+  log("Got in here " + str(seqn))
+  msg = {"sequence": seqn, "data": "", "ack": False, "eof": False, "resend": False}
+  log("Got past msg")
   overhead = len(json.dumps(msg))
+  log("Got past overhead")
   msg["data"] = sys.stdin.read(DATA_SIZE - overhead)
-  
+  log("Got past data read")
   # Save a copy of the msg
   global lastMsg
   lastMsg = msg
@@ -48,6 +58,7 @@ def send_next_packet(seqn, sock, dest):
   # it only won't when there is nothing else to read in from standard in, 
   # ie. that is the last packet to send
   if len(msg["data"]) > 0:
+    log("Got into if len data")
     assert (len(msg) <= DATA_SIZE), f"ERROR: Datagram is longer ({len(msg)}) than {DATA_SIZE} bytes!!!"
 
     if sock.sendto(json.dumps(msg).encode('ascii'), dest) < len(msg):
@@ -55,6 +66,7 @@ def send_next_packet(seqn, sock, dest):
     else:
       log("[send data] " + str(seqn) + " (" + str(len(msg["data"])) + ")")
     return seqn + len(msg["data"])
+  log("Not into the if")
   return seqn
 
 def main():
@@ -86,11 +98,12 @@ def main():
     try:
       # recvfrom blocks until it gets something
       result = sock.recvfrom(MSG_SIZE)
-      rtt = time.time() - startTime
-
+      # Only sets the rtt if it managed to send the packet
+      rtt = 3 * (time.time() - startTime)
     except socket.timeout as timeoutException:
       log("Caught a dropped packet")
       log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")
+      lastMsg["resend"] = True
       sock.sendto(json.dumps(lastMsg).encode('ascii'), dest)
       continue
 
@@ -106,6 +119,7 @@ def main():
           log(f"[recv ack] {seqn}")
 
           # Try to send next packet; break if no more data
+          startTime = time.time()
           new_seq = send_next_packet(seqn, sock, dest)
           if new_seq == seqn:
             break
@@ -118,7 +132,9 @@ def main():
 
     log(f"(seqn {seqn})")
 
-  sock.sendto(json.dumps({"eof": True, "data": "", "sequence": seqn, "ack": False}).encode('ascii'), dest)
+  log("Sending the final packet")
+  # TODO: This final packet drops and I don't know to fix it lol 
+  sock.sendto(json.dumps({"eof": True, "data": "", "sequence": seqn, "ack": False, "resend": False}).encode('ascii'), dest)
   sys.exit(0)
 
 if __name__ == '__main__':

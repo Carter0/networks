@@ -34,7 +34,6 @@ rtt = 4
 
 MSG_SIZE = 1500
 DATA_SIZE = 1472
-TIMEOUT = rtt
 
 
 def log(string):
@@ -77,7 +76,7 @@ def main():
 
   # Set up the socket
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  sock.settimeout(TIMEOUT)
+  sock.settimeout(1)
 
   result = None
 
@@ -96,20 +95,25 @@ def main():
       # recvfrom blocks until it gets something
       result = sock.recvfrom(MSG_SIZE)
       # Only sets the rtt if it managed to send the packet
-      rtt = 3 * (time.time() - startTime)
+      rtt = 4 * (time.time() - startTime)
+      log(f"rtt is {rtt}")
+      sock.settimeout(rtt)
     except socket.timeout as timeoutException:
       log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")
       lastMsg["resend"] = True
+      startTime = time.time()
       sock.sendto(json.dumps(lastMsg).encode('ascii'), dest)
       continue
 
+    #log(f"result is: {result}")
     if result:
       (data, _addr) = result
       data = data.decode('ascii')
+      log(f"data is : {data}")
 
       try:
         decoded = json.loads(data)
-        log(f"Decoded msg is,  seqn:  {decoded['sequence']}, fin: {decoded['fin']}")
+       # log(f"Decoded msg is,  seqn:  {decoded['sequence']}, fin: {decoded['fin']}")
 
         if decoded['fin']:
           log("Closing send")
@@ -125,7 +129,8 @@ def main():
           if new_seq == seqn:
             break
           seqn = new_seq
-      except (ValueError, KeyError, TypeError):
+      except (ValueError, KeyError, TypeError) as exc:
+        log(exc)
         log("[recv corrupt packet]")
     else:
       log("[error] timeout")
@@ -133,8 +138,8 @@ def main():
 
     log(f"(seqn {seqn})")
 
+  log("Send final packet")
   sock.sendto(json.dumps({"eof": True, "data": "", "sequence": seqn, "ack": False, "resend": False}).encode('ascii'), dest)
-  sys.exit(0)
 
 if __name__ == '__main__':
   main()

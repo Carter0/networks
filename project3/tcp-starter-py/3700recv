@@ -17,8 +17,8 @@ def log(string):
   sys.stderr.flush()
 
 
-def send_ack(decoded, sock, addr):
-  msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data']), "fin": False})
+def send_ack(decoded, sock, addr, fin):
+  msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data']), "fin": fin})
   log("ABOUT TO SEND " + msg)
   if sock.sendto(msg.encode('ascii'), addr) < len(msg):
     log("[error] unable to fully send packet")
@@ -57,28 +57,27 @@ def main():
 
       try:
         decoded = json.loads(data)
-
-        log(f"Recieved: {decoded}")
+        #log(f"resend is: {str(decoded['resend'])}")
 
         if decoded['eof']:
-          log("It is the end of the file")
+          send_ack(decoded, sock, addr, True)
 
         if decoded['resend']:
-          send_ack(decoded, sock, addr)
+          send_ack(decoded, sock, addr, False)
 
         # if the sqn is the one you expect, do everything
         # else just drop it
         if decoded['sequence'] == sqnCounter or decoded['eof']:
 
+          if decoded['eof']:
+            send_ack(decoded, sock, addr, True)
+            log("COMPLETE")
+            sys.exit()
+
           # increment the sqn number if its not a resent packet
           if not decoded['eof']:
             sqnCounter += decoded['sequence'] + len(decoded['data'])
 
-          # If the EOF flag is set, exit
-          if decoded['eof']:
-            msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data']), "fin": True})
-            log("[completed]")
-            sys.exit(0)
 
           # If there is data, we accept it and print it out
           if decoded['data']:
@@ -87,7 +86,7 @@ def main():
             log(f"[recv data] {decoded['sequence']} ({len(decoded['data'])}) ACCEPTED (in-order)")
             sys.stdout.write(decoded['data'])
 
-          send_ack(decoded, sock, addr)
+          send_ack(decoded, sock, addr, False)
 
       except (ValueError, KeyError, TypeError) as exc:
         log("[recv corrupt packet]")

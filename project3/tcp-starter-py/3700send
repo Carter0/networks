@@ -30,7 +30,7 @@ I still dont really know though :(
 lastMsg = None
 
 # Keep an estimate of the roundtriptime
-rtt = 4
+rtt = 5
 
 MSG_SIZE = 1500
 DATA_SIZE = 1472
@@ -103,7 +103,7 @@ def main():
       sock.settimeout(rttm)
     except socket.timeout as timeoutException:
       lastMsg['resend'] = True
-      #log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")
+      log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")
       startTime = time.time()
       sock.sendto(json.dumps(lastMsg).encode('ascii'), dest)
       continue
@@ -146,6 +146,9 @@ def main():
       sys.exit(-1)
 
     log(f"(seqn {seqn})")
+
+
+
 
 
 if __name__ == '__main__':

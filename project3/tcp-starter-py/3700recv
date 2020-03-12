@@ -61,18 +61,16 @@ def main():
 
         if decoded['eof']:
           send_ack(decoded, sock, addr, True)
+          log("COMPLETE")
+          sys.exit(0)
+
 
         if decoded['resend']:
           send_ack(decoded, sock, addr, False)
 
         # if the sqn is the one you expect, do everything
         # else just drop it
-        if decoded['sequence'] == sqnCounter or decoded['eof']:
-
-          if decoded['eof']:
-            send_ack(decoded, sock, addr, True)
-            log("COMPLETE")
-            sys.exit()
+        if decoded['sequence'] == sqnCounter:
 
           # increment the sqn number if its not a resent packet
           if not decoded['eof']:

@@ -100,7 +100,7 @@ def main():
       # Only sets the rtt if it managed to send the packet
       rttm = time.time() - startTime
       rtts = 3 * (0.875 * rtts) + 0.125 * rttm
-      sock.settimeout(rttm)
+      sock.settimeout(rtts)
     except socket.timeout as timeoutException:
       lastMsg['resend'] = True
       log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")

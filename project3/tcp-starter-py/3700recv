@@ -60,7 +60,8 @@ def main():
         #log(f"resend is: {str(decoded['resend'])}")
 
         if decoded['eof']:
-          send_ack(decoded, sock, addr, True)
+          for n in range(10):
+            send_ack(decoded, sock, addr, True)
           log("COMPLETE")
           sys.exit(0)
 

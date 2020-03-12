@@ -15,15 +15,6 @@ and dropped packets in here
 '''
 Dropped packets
 
-Alright I think a lot of what I wrote was wrong. 
-
-I think my problem is that if recv stays open longer than send the msg is not printed out at all.
-I need to make the program shut down gracefully. 
-
-See the piazza post
-
-I still dont really know though :( 
-
 '''
 
 # keep a copy of the last packet sent incase it gets dropped.

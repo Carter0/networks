@@ -8,8 +8,7 @@ import time
 
 rtt = 10
 MSG_SIZE = 1500
-TIMEOUT = 10
-lastAck = None
+TIMEOUT = 30
 
 
 
@@ -23,9 +22,6 @@ def main():
   # Keep a counter of all the SEQN you have recieved and increment it
   # with each packet. Only accept packets that match your expected SQN.
   sqnCounter = 0
-
-  global rtt
-  global lastAck
 
   # Bind to localhost and an ephemeral port
   udp_ip = "127.0.0.1"
@@ -43,23 +39,9 @@ def main():
   udp_port = sock.getsockname()[1]
   log(f"[bound] {udp_port}")
 
-  result = None
-
-  # start the time calculations
-  startTime = 0
-
   # Now listen for packets
   while True:
-    try:
-      result = sock.recvfrom(MSG_SIZE)
-      rtt = 3 * (time.time() - startTime)
-    except socket.timeout as timeoutExc:
-      # resend the last ack 
-      # TODO: sometimes this is None and it breaks and I don't know why its none
-      log("Resending Ack " + lastAck)
-      # TODO; Also it doesnt seem like resending the ack does anything which is GOOD :)
-      sock.sendto(lastAck.encode('ascii'), addr)
-      continue
+    result = sock.recvfrom(MSG_SIZE)
 
     # If nothing is ready, we hit the timeout
     if result:
@@ -71,14 +53,12 @@ def main():
 
         # if the sqn is the one you expect, do everything
         # else just drop it
-        log(f"Sequence number is: { decoded['sequence'] }")
-        log(f"Sequence Counter is: {sqnCounter}")
-        log(f"Resend  is: { decoded['resend']}")
         if decoded['sequence'] == sqnCounter or decoded['resend'] == True or decoded['eof']:
 
           # increment the sqn number if its not a resent packet
-          if decoded['resend'] == False and not decoded['eof']:
+          if not decoded['resend'] and not decoded['eof']:
             sqnCounter += decoded['sequence'] + len(decoded['data']) 
+
           # If the EOF flag is set, exit
           if decoded['eof']:
             log("[completed]")
@@ -93,10 +73,7 @@ def main():
 
 
           msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data'])})
-          lastAck = msg
           log("ABOUT TO SEND " + msg)
-          # Possibility that the ack packet is dropped motherfucker
-          startTime = time.time()
           if sock.sendto(msg.encode('ascii'), addr) < len(msg):
             log("[error] unable to fully send packet")
 

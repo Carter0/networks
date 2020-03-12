@@ -98,7 +98,6 @@ def main():
       # Only sets the rtt if it managed to send the packet
       rtt = 3 * (time.time() - startTime)
     except socket.timeout as timeoutException:
-      log("Caught a dropped packet")
       log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")
       lastMsg["resend"] = True
       sock.sendto(json.dumps(lastMsg).encode('ascii'), dest)
@@ -110,6 +109,11 @@ def main():
 
       try:
         decoded = json.loads(data)
+        log(f"Decoded msg is,  seqn:  {decoded['sequence']}, fin: {decoded['fin']}")
+
+        if decoded['fin']:
+          log("Closing send")
+          sys.exit(0)
 
         # If there is an ack, send next packet
         if decoded['ack'] == seqn:

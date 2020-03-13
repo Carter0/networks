@@ -7,30 +7,8 @@ import json
 import time
 
 
-'''
-Note: We are going to need to implement sliding window 
-and dropped packets in here
-'''
-
-'''
-Dropped packets
-
-Alright I think a lot of what I wrote was wrong. 
-
-I think my problem is that if recv stays open longer than send the msg is not printed out at all.
-I need to make the program shut down gracefully. 
-
-See the piazza post
-
-I still dont really know though :( 
-
-'''
-
 # keep a copy of the last packet sent incase it gets dropped.
 lastMsg = None
-
-# Keep an estimate of the roundtriptime
-rtt = 5
 
 MSG_SIZE = 1500
 DATA_SIZE = 1472
@@ -61,7 +39,6 @@ def send_next_packet(seqn, sock, dest):
     else:
       log("[send data] " + str(seqn) + " (" + str(len(msg["data"])) + ")")
     return seqn + len(msg["data"])
-  log("Not into the if")
   return seqn
 
 def main():
@@ -72,27 +49,26 @@ def main():
   dest = (udp_ip, udp_port)
   seqn = 0
 
-  global rtt
   global lastMsg
 
   # Set up the socket
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  sock.settimeout(1)
+  sock.settimeout(10)
 
-  result = None
 
-  # Start the timer needed to calc RTT 
+  # St up stuff for the rtt calculations
   startTime = time.time()
+  rttm = 0
+  rtts = 0
 
   # Send first packet
+  startTime = time.time()
   seqn = send_next_packet(seqn, sock, dest)
-
-  rtts = 0
 
 
   # Now read in data, send packets
   while True:
-    log("ABOUT TO SLEEP")
+    #log("ABOUT TO SLEEP")
 
     try:
       # recvfrom blocks until it gets something
@@ -100,30 +76,27 @@ def main():
       # Only sets the rtt if it managed to send the packet
       rttm = time.time() - startTime
       rtts = 3 * (0.875 * rtts) + 0.125 * rttm
-      sock.settimeout(rtts)
+      #sock.settimeout(rtts)
     except socket.timeout as timeoutException:
       lastMsg['resend'] = True
-      log("[send last data] " + str(lastMsg['sequence']) + " (" + str(len(lastMsg["data"])) + ")")
       startTime = time.time()
       sock.sendto(json.dumps(lastMsg).encode('ascii'), dest)
       continue
 
-    #log(f"result is: {result}")
     if result:
       (data, _addr) = result
       data = data.decode('ascii')
 
       try:
         decoded = json.loads(data)
-        log(f"Decoded msg is,  seqn:  {str(decoded['ack'])}, fin: {decoded['fin']}")
 
         if decoded['fin']:
-          log("Closing send")
+          time.sleep(3)
+          log("[completed]")
           sys.exit(0)
 
         # If there is an ack, send next packet
         if decoded['ack'] == seqn:
-          #log(f"[recv ack] {seqn}")
 
           # Try to send next packet; break it no more data
           startTime = time.time()
@@ -133,11 +106,14 @@ def main():
             log("Send final packet")
             finalMsg = {"eof": True, "data": "", "sequence": seqn, "ack": False, 'resend': False}
             encode = json.dumps(finalMsg)
+
+            # Save a copy of the final msg incase it does not make it
             lastMsg = finalMsg
             sock.sendto(encode.encode('ascii'), dest)
-            continue
 
+          # Current sequence number now includes the read in data
           seqn = new_seq
+
       except (ValueError, KeyError, TypeError) as exc:
         log(exc)
         log("[recv corrupt packet]")

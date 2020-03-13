@@ -19,7 +19,6 @@ def log(string):
 
 def send_ack(decoded, sock, addr, fin):
   msg = json.dumps({"ack": decoded['sequence'] + len(decoded['data']), "fin": fin})
-  log("ABOUT TO SEND " + msg)
   if sock.sendto(msg.encode('ascii'), addr) < len(msg):
     log("[error] unable to fully send packet")
 
@@ -57,34 +56,32 @@ def main():
 
       try:
         decoded = json.loads(data)
-        #log(f"resend is: {str(decoded['resend'])}")
 
         if decoded['eof']:
-          for n in range(10):
+          for n in range(2):
             send_ack(decoded, sock, addr, True)
-          log("COMPLETE")
+          log("[completed]")
           sys.exit(0)
 
 
         if decoded['resend']:
           send_ack(decoded, sock, addr, False)
+          continue
 
         # if the sqn is the one you expect, do everything
         # else just drop it
         if decoded['sequence'] == sqnCounter:
 
           # increment the sqn number if its not a resent packet
-          if not decoded['eof']:
-            sqnCounter += decoded['sequence'] + len(decoded['data'])
+          sqnCounter += decoded['sequence'] + len(decoded['data'])
 
-
+          log(f"data size: {decoded['data']}")
           # If there is data, we accept it and print it out
           if decoded['data']:
-            # If we receive data, we assume it's in-order
-            # You will need to do much more here
             log(f"[recv data] {decoded['sequence']} ({len(decoded['data'])}) ACCEPTED (in-order)")
             sys.stdout.write(decoded['data'])
 
+          # Send back an ack saying you have incremented the data
           send_ack(decoded, sock, addr, False)
 
       except (ValueError, KeyError, TypeError) as exc:

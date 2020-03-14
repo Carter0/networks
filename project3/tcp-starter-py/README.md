@@ -1,0 +1,5 @@
+High level we basically just tried making changes and then running the code. We mostly tried to work from easiest to hardest in terms of problems to solve. So we started with duplicates and then tried to make our way to sliding window. Later on we were not even sure if we needed sliding window, but whatever.
+
+We faced a lot of challenges. All in all I think the main problem is that we just did not know what we were doing. We understood the high level concepts of what to do, like what an Ack is, how sliding window works, selective Ack's etc.., but we didn't know how to implement them or exactly if they were neeeded or not. For example we implemented a version of RTT because we thought it would speed up the program, but we were never sure we were doing it right. All in all, doing this project felt like we werelearning how to swim by being thrown in the deep end of a lake, but it seems we just drowned. 
+
+Testing was fairly simple to do here. Giving us the netsim and the test perl scripts made testing out our changes very smooth. Without the run script this project would have been much more annoying, so thanks for that.

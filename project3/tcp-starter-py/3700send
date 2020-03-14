@@ -13,7 +13,6 @@ lastMsg = None
 MSG_SIZE = 1500
 DATA_SIZE = 1472
 
-
 def log(string):
   sys.stderr.write(datetime.datetime.now().strftime("%H:%M:%S.%f") + " " + string + "\n")
   sys.stderr.flush()
@@ -23,6 +22,8 @@ def send_next_packet(seqn, sock, dest):
   msg = {"sequence": seqn, "data": "", "ack": False, "eof": False, "resend": False}
   overhead = len(json.dumps(msg))
   msg["data"] = sys.stdin.read(DATA_SIZE - overhead)
+  #log("DATA IS")
+  #log(msg['data'])
 
   # Save a copy of the msg
   global lastMsg
@@ -53,16 +54,16 @@ def main():
 
   # Set up the socket
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  sock.settimeout(10)
+  sock.settimeout(30)
 
 
   # St up stuff for the rtt calculations
   startTime = time.time()
   rttm = 0
   rtts = 0
+  first = True
 
   # Send first packet
-  startTime = time.time()
   seqn = send_next_packet(seqn, sock, dest)
 
 
@@ -73,13 +74,15 @@ def main():
     try:
       # recvfrom blocks until it gets something
       result = sock.recvfrom(MSG_SIZE)
-      # Only sets the rtt if it managed to send the packet
       rttm = time.time() - startTime
-      rtts = 3 * (0.875 * rtts) + 0.125 * rttm
-      #sock.settimeout(rtts)
+      if first:
+        rtts = rttm
+        first = False
+      # Only sets the rtt if it managed to send the packet
+      rtts = (0.875 * rtts) + 0.125 * rttm
+      sock.settimeout(3 * rtts)
     except socket.timeout as timeoutException:
       lastMsg['resend'] = True
-      startTime = time.time()
       sock.sendto(json.dumps(lastMsg).encode('ascii'), dest)
       continue
 
@@ -99,7 +102,6 @@ def main():
         if decoded['ack'] == seqn:
 
           # Try to send next packet; break it no more data
-          startTime = time.time()
           new_seq = send_next_packet(seqn, sock, dest)
 
           if new_seq == seqn:
